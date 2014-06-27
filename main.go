@@ -13,6 +13,9 @@ import (
 	"sync"
 )
 
+// Filter reads a sequence of strings from a channel and produces a
+// sequence on another channel.  Many implementations of Filter are
+// provided.
 type Filter func(<-chan string, chan<- string)
 
 // Each() returns a channel that contains all output emitted by a

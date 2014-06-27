@@ -242,9 +242,10 @@ func Reverse(in <-chan string, out chan<- string) {
 type FindType int
 
 const (
-	FILES FindType = 1
-	DIRS  FindType = 2
-	ALL   FindType = FILES | DIRS
+	FILES    FindType = 1
+	DIRS     FindType = 2
+	SYMLINKS FindType = 4
+	ALL      FindType = FILES | DIRS | SYMLINKS
 )
 
 func Find(ft FindType, dir string) Filter {
@@ -252,7 +253,8 @@ func Find(ft FindType, dir string) Filter {
 		copydata(in, out)
 		filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
 			if ft&FILES != 0 && s.Mode().IsRegular() ||
-				ft&DIRS != 0 && s.Mode().IsDir() {
+				ft&DIRS != 0 && s.Mode().IsDir() ||
+				ft&SYMLINKS != 0 && s.Mode()&os.ModeSymlink != 0 {
 				out <- f
 			}
 			return nil
@@ -415,5 +417,9 @@ func main() {
 	Print(Echo("=== files ==="), Find(DIRS, "/home/sanjay/tmp/x"))
 
 	// Reconcile part 1
-	// Print(Find(FILES, dir), ApplyParallel(4, hash))
+	Print(Echo("------------"))
+	Print(
+		Find(FILES, "/home/sanjay/tmp/y"),
+		ApplyParallel(4, hash),
+	)
 }

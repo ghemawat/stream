@@ -15,50 +15,41 @@ import (
 
 type Filter func(<-chan string, chan<- string)
 
-func (f Filter) To(g Filter) Filter {
-	c := make(chan string, 10000)
-	return func(in <-chan string, out chan<- string) {
-		go g(c, out)
-		f(in, c)
+// Return a channel that contains all output emitted by a sequence of filter.
+func Each(filters ...Filter) <-chan string {
+	c := make(chan string, 0)
+	close(c) // No data sent to first filter
+	for _, f := range filters {
+		next := make(chan string, 10000)
+		f(c, next)
+		c = next
+	}
+	return c
+}
+
+func copydata(in <-chan string, out chan<- string) {
+	for s := range in {
+		out <- s
 	}
 }
 
-func drain(in <-chan string) {
-	for _ = range in {
-	}
-}
-
-func Run(f Filter) {
-	input := make(chan string, 0)
-	close(input)
-	output := make(chan string, 10000)
-	go drain(output)
-	f(input, output)
-}
-
-func Print(f Filter) {
-	input := make(chan string, 0)
-	close(input)
-	output := make(chan string, 10000)
-	go f(input, output)
-	for s := range output {
+func Print(filters ...Filter) {
+	for s := range Each(filters...) {
 		fmt.Println(s)
 	}
 }
 
-func Echo(items ...string) Filter {
+func Echo(item string) Filter {
 	return func(in <-chan string, out chan<- string) {
-		go drain(in)
-		for _, s := range items {
-			out <- s
-		}
+		copydata(in, out)
+		out <- item
 		close(out)
 	}
 }
 
 func Seq(x, y int) Filter {
 	return func(in <-chan string, out chan<- string) {
-		go drain(in)
+		copydata(in, out)
 		for i := x; i <= y; i++ {
 			out <- fmt.Sprintf("%d", i)
 		}
@@ -247,7 +238,7 @@ func Reverse(in <-chan string, out chan<- string) {
 
 func Find(dir string, matcher func(string, os.FileInfo, error) bool) Filter {
 	return func(in <-chan string, out chan<- string) {
-		go drain(in)
+		copydata(in, out)
 		filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
 			if matcher == nil || matcher(f, s, e) {
 				out <- f
@@ -347,33 +338,35 @@ func main() {
 		return fmt.Sprintf("%x %s", hasher.Sum(nil), f), true
 	}
 
-	Print(Seq(1, 100).
-		To(Grep("3")).
-		To(GrepNot("7")).
-		To(dbl).
-		To(Uniq).
-		To(ReplaceMatch("^(.)$", "x$1")).
-		To(Sort).
-		To(ReplaceMatch("^(.)", "$1 ")).
-		To(dbl).
-		To(DeleteMatch(" .$")).
-		To(UniqWithCount).
-		To(SortNumeric(1)).
-		To(Reverse))
+	Print()
 
-	Print(FindFiles("/home/sanjay/tmp").
-		To(ApplyParallel(4, hash)).
-		To(Grep("/tmp/x")).
-		To(GrepNot("/sub2/")).
-		To(ReplaceMatch(" /home/sanjay/", " ")))
+	Print(Seq(1, 100),
+		Grep("3"),
+		GrepNot("7"),
+		dbl,
+		Uniq,
+		ReplaceMatch("^(.)$", "x$1"),
+		Sort,
+		ReplaceMatch("^(.)", "$1 "),
+		dbl,
+		DeleteMatch(" .$"),
+		UniqWithCount,
+		SortNumeric(1),
+		Reverse)
 
-	Print(Echo("a", "b", "c"))
+	Print(FindFiles("/home/sanjay/tmp"),
+		ApplyParallel(4, hash),
+		Grep("/tmp/x"),
+		GrepNot("/sub2/"),
+		ReplaceMatch(" /home/sanjay/", " "))
 
-	Print(Echo("/home/sanjay/.bashrc").
-		To(FileLines).
-		To(First(10)).
-		To(NumberLines).
-		To(Last(3)))
+	Print(Echo("a"), Echo("b"), Echo("c"))
+
+	Print(Echo("/home/sanjay/.bashrc"),
+		FileLines,
+		First(10),
+		NumberLines,
+		Last(3))
 
 	// Reconcile part 1
 	// Print(FindFiles(dir).To(ApplyParallel(4, hash)))

@@ -121,21 +121,17 @@ func UniqWithCount(in <-chan string, out chan<- string) {
 	}
 }
 
-// Apply calls fn(x) in order for every item x.  It yields the first
-// result of fn(x) iff the second result of fn(x) is true.
-func Apply(fn func(string) (string, bool)) Filter {
+// Apply calls fn(x, out) in order for every item x.
+func Apply(fn func(string, chan<- string)) Filter {
 	return func(in <-chan string, out chan<- string) {
 		for s := range in {
-			if r, ok := fn(s); ok {
-				out <- r
-			}
+			fn(s, out)
 		}
 	}
 }
 
-// Apply calls fn(x) for every item x in a pool of n goroutines.
-// It yields the first result of fn(x) iff the second result of fn(x) is true.
-func ApplyParallel(n int, fn func(string) (string, bool)) Filter {
+// ApplyParallel calls fn(x, out) for every item x in a pool of n goroutines.
+func ApplyParallel(n int, fn func(string, chan<- string)) Filter {
 	// TODO: Maintain input order?
 	// (a) Input goroutine generates <index, str> pairs
 	// (b) n appliers read pairs and produce <index, fn(str)> pairs
@@ -146,9 +142,7 @@ func ApplyParallel(n int, fn func(string) (string, bool)) Filter {
 		for i := 0; i < n; i++ {
 			go func() {
 				for s := range in {
-					if r, ok := fn(s); ok {
-						out <- r
-					}
+					fn(s, out)
 				}
 				wg.Done()
 			}()
@@ -159,8 +153,8 @@ func ApplyParallel(n int, fn func(string) (string, bool)) Filter {
 
 func ReplaceMatch(r, replacement string) Filter {
 	re := regexp.MustCompile(r)
-	return Apply(func(s string) (string, bool) {
-		return re.ReplaceAllString(s, replacement), true
+	return Apply(func(s string, out chan<- string) {
+		out <- re.ReplaceAllString(s, replacement)
 	})
 }
 
@@ -338,6 +332,20 @@ func NumberLines(in <-chan string, out chan<- string) {
 	}
 }
 
+func Cut(start, end int) Filter {
+	return Apply(func(s string, out chan<- string) {
+		if len(s) > end {
+			s = s[:end+1]
+		}
+		if len(s) < start {
+			s = ""
+		} else {
+			s = s[start:]
+		}
+		out <- s
+	})
+}
+
 func main() {
 	dbl := func(in <-chan string, out chan<- string) {
 		for s := range in {
@@ -346,20 +354,20 @@ func main() {
 		}
 	}
 
-	hash := func(f string) (string, bool) {
+	hash := func(f string, out chan<- string) {
 		file, err := os.Open(f)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			return "", false
+			return
 		}
 		hasher := sha1.New()
 		_, err = io.Copy(hasher, file)
 		file.Close()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			return "", false
+			return
 		}
-		return fmt.Sprintf("%x %s", hasher.Sum(nil), f), true
+		out <- fmt.Sprintf("%x %s", hasher.Sum(nil), f)
 	}
 
 	Print()
@@ -378,13 +386,14 @@ func main() {
 		DeleteMatch(" .$"),
 		UniqWithCount,
 		SortNumeric(1),
-		Reverse)
+		Reverse,
+		Echo("==="))
 
 	Print(Find(FILES, "/home/sanjay/tmp"),
-		ApplyParallel(4, hash),
 		Grep("/tmp/x"),
 		GrepNot("/sub2/"),
-		ReplaceMatch(" /home/sanjay/", " "))
+		ApplyParallel(4, hash),
+		ReplaceMatch(" /home/sanjay/", " HOME/"))
 
 	Print(Echo("a"), Echo("b"), Echo("c"))
 
@@ -392,6 +401,7 @@ func main() {
 		FileLines,
 		First(10),
 		NumberLines,
+		Cut(3, 50),
 		Last(3))
 
 	Print(Seq(1, 10), DropFirst(8))

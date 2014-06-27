@@ -222,22 +222,25 @@ func Reverse(in <-chan string, out chan<- string) {
 	}
 }
 
-func Find(dir string, matcher func(string, os.FileInfo, error) bool) Filter {
+type FindType int
+
+const (
+	FILES FindType = 1
+	DIRS  FindType = 2
+	ALL   FindType = FILES | DIRS
+)
+
+func Find(ft FindType, dir string) Filter {
 	return func(in <-chan string, out chan<- string) {
 		copydata(in, out)
 		filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
-			if matcher == nil || matcher(f, s, e) {
+			if ft&FILES != 0 && s.Mode().IsRegular() ||
+				ft&DIRS != 0 && s.Mode().IsDir() {
 				out <- f
 			}
 			return nil
 		})
 	}
-}
-
-func FindFiles(dir string) Filter {
-	return Find(dir, func(f string, s os.FileInfo, e error) bool {
-		return s.Mode().IsRegular()
-	})
 }
 
 func FileLines(in <-chan string, out chan<- string) {
@@ -267,6 +270,18 @@ func First(n int) Filter {
 	}
 }
 
+func DropFirst(n int) Filter {
+	return func(in <-chan string, out chan<- string) {
+		emitted := 0
+		for s := range in {
+			if emitted >= n {
+				out <- s
+			}
+			emitted++
+		}
+	}
+}
+
 func Last(n int) Filter {
 	return func(in <-chan string, out chan<- string) {
 		var buf []string
@@ -282,6 +297,19 @@ func Last(n int) Filter {
 	}
 }
 
+func DropLast(n int) Filter {
+	return func(in <-chan string, out chan<- string) {
+		var buf []string
+		for s := range in {
+			buf = append(buf, s)
+			if len(buf) > n {
+				out <- buf[0]
+				buf = buf[1:]
+			}
+		}
+	}
+}
+
 func NumberLines(in <-chan string, out chan<- string) {
 	line := 1
 	for s := range in {
@@ -289,10 +317,6 @@ func NumberLines(in <-chan string, out chan<- string) {
 		line++
 	}
 }
-
-// TODO:
-//  DropFirst(n)
-//  DropLast(n)
 
 func main() {
 	dbl := func(in <-chan string, out chan<- string) {
@@ -336,7 +360,7 @@ func main() {
 		SortNumeric(1),
 		Reverse)
 
-	Print(FindFiles("/home/sanjay/tmp"),
+	Print(Find(FILES, "/home/sanjay/tmp"),
 		ApplyParallel(4, hash),
 		Grep("/tmp/x"),
 		GrepNot("/sub2/"),
@@ -349,6 +373,13 @@ func main() {
 		First(10),
 		NumberLines,
 		Last(3))
+
+	Print(Seq(1, 10), DropFirst(8))
+	Print(Seq(1, 10), DropLast(7))
+
+	Print(Echo("=== all ==="), Find(ALL, "/home/sanjay/tmp/x"))
+	Print(Echo("=== dirs ==="), Find(FILES, "/home/sanjay/tmp/x"))
+	Print(Echo("=== files ==="), Find(DIRS, "/home/sanjay/tmp/x"))
 
 	// Reconcile part 1
 	// Print(FindFiles(dir).To(ApplyParallel(4, hash)))

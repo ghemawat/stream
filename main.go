@@ -21,16 +21,13 @@ func Each(filters ...Filter) <-chan string {
 	close(c) // No data sent to first filter
 	for _, f := range filters {
 		next := make(chan string, 10000)
-		go f(c, next)
+		go func(x Filter, in <-chan string, out chan<- string) {
+			x(in, out)
+			close(out)
+		}(f, c, next)
 		c = next
 	}
-	return c
-}
-
-func copydata(in <-chan string, out chan<- string) {
-	for s := range in {
-		out <- s
-	}
+	return c // will contain output of last filter
 }
 
 func Print(filters ...Filter) {
@@ -39,11 +36,16 @@ func Print(filters ...Filter) {
 	}
 }
 
+func copydata(in <-chan string, out chan<- string) {
+	for s := range in {
+		out <- s
+	}
+}
+
 func Echo(item string) Filter {
 	return func(in <-chan string, out chan<- string) {
 		copydata(in, out)
 		out <- item
-		close(out)
 	}
 }
 
@@ -53,7 +55,6 @@ func Seq(x, y int) Filter {
 		for i := x; i <= y; i++ {
 			out <- fmt.Sprintf("%d", i)
 		}
-		close(out)
 	}
 }
 
@@ -64,7 +65,6 @@ func If(fn func(string) bool) Filter {
 				out <- s
 			}
 		}
-		close(out)
 	}
 }
 
@@ -88,7 +88,6 @@ func Uniq(in <-chan string, out chan<- string) {
 		last = s
 		first = false
 	}
-	close(out)
 }
 
 func UniqWithCount(in <-chan string, out chan<- string) {
@@ -107,7 +106,6 @@ func UniqWithCount(in <-chan string, out chan<- string) {
 	if count > 0 {
 		out <- fmt.Sprintf("%d %s", count, current)
 	}
-	close(out)
 }
 
 func Apply(fn func(string) (string, bool)) Filter {
@@ -117,7 +115,6 @@ func Apply(fn func(string) (string, bool)) Filter {
 				out <- r
 			}
 		}
-		close(out)
 	}
 }
 
@@ -137,7 +134,6 @@ func ApplyParallel(n int, fn func(string) (string, bool)) Filter {
 			}()
 		}
 		wg.Wait()
-		close(out)
 	}
 }
 
@@ -161,7 +157,6 @@ func Sort(in <-chan string, out chan<- string) {
 	for _, s := range data {
 		out <- s
 	}
-	close(out)
 }
 
 type fnStringSlice struct {
@@ -184,7 +179,6 @@ func SortBy(fn func(string, string) bool) Filter {
 		for _, s := range data.StringSlice {
 			out <- s
 		}
-		close(out)
 	}
 }
 
@@ -233,7 +227,6 @@ func Reverse(in <-chan string, out chan<- string) {
 	for i := len(data) - 1; i >= 0; i-- {
 		out <- data[i]
 	}
-	close(out)
 }
 
 func Find(dir string, matcher func(string, os.FileInfo, error) bool) Filter {
@@ -245,7 +238,6 @@ func Find(dir string, matcher func(string, os.FileInfo, error) bool) Filter {
 			}
 			return nil
 		})
-		close(out)
 	}
 }
 
@@ -268,7 +260,6 @@ func FileLines(in <-chan string, out chan<- string) {
 		}
 		file.Close()
 	}
-	close(out)
 }
 
 func First(n int) Filter {
@@ -280,7 +271,6 @@ func First(n int) Filter {
 				emitted++
 			}
 		}
-		close(out)
 	}
 }
 
@@ -296,7 +286,6 @@ func Last(n int) Filter {
 		for _, s := range buf {
 			out <- s
 		}
-		close(out)
 	}
 }
 
@@ -306,7 +295,6 @@ func NumberLines(in <-chan string, out chan<- string) {
 		out <- fmt.Sprintf("%5d %s", line, s)
 		line++
 	}
-	close(out)
 }
 
 // TODO:
@@ -319,7 +307,6 @@ func main() {
 			out <- s
 			out <- s
 		}
-		close(out)
 	}
 
 	hash := func(f string) (string, bool) {
@@ -339,6 +326,8 @@ func main() {
 	}
 
 	Print()
+	Print(Echo("a"))
+	Print(Echo("a"), Echo("b"))
 
 	Print(Seq(1, 100),
 		Grep("3"),

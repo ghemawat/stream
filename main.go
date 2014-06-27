@@ -182,36 +182,29 @@ func SortBy(fn func(string, string) bool) Filter {
 	}
 }
 
-func naturalSplit(s string) []string {
-	r := regexp.MustCompile(`\s+`).Split(s, -1)
-	for len(r) > 0 && r[0] == "" {
-		r = r[1:]
-	}
-	for len(r) > 0 && r[len(r)-1] == "" {
-		r = r[:len(r)-1]
-	}
-	return r
-}
-
-func toNum(cols []string, column int) (int, int64) {
-	if len(cols) <= column {
-		// Missing data is sorted before all numbers
-		return -1, 0
-	}
-	x, err := strconv.ParseInt(cols[column], 0, 64)
-	if err != nil {
-		// Bad data is sorted after all numbers
-		return +1, 0
-	}
-	return 0, x
-}
-
 func SortNumeric(column int) Filter {
+	toNum := func(s string) (int, int64) {
+		r := regexp.MustCompile(`\s+`).Split(s, -1)
+		for len(r) > 0 && r[0] == "" {
+			r = r[1:]
+		}
+		for len(r) > 0 && r[len(r)-1] == "" {
+			r = r[:len(r)-1]
+		}
+		if len(r) <= column {
+			// Missing data is sorted before all numbers
+			return -1, 0
+		}
+		x, err := strconv.ParseInt(r[column], 0, 64)
+		if err != nil {
+			// Bad data is sorted after all numbers
+			return +1, 0
+		}
+		return 0, x
+	}
 	return SortBy(func(a, b string) bool {
-		ca := naturalSplit(a)
-		cb := naturalSplit(b)
-		a1, a2 := toNum(ca, column)
-		b1, b2 := toNum(cb, column)
+		a1, a2 := toNum(a)
+		b1, b2 := toNum(b)
 		if a1 != b1 {
 			return a1 < b1
 		}

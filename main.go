@@ -120,6 +120,9 @@ func Apply(fn func(string) (string, bool)) Filter {
 
 func ApplyParallel(n int, fn func(string) (string, bool)) Filter {
 	// TODO: Maintain input order?
+	// (a) Input goroutine generates <index, str> pairs
+	// (b) n appliers read pairs and produce <index, fn(str)> pairs
+	// (c) Output goroutine reads and emits in order
 	return func(in <-chan string, out chan<- string) {
 		wg := &sync.WaitGroup{}
 		wg.Add(n)

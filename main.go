@@ -21,7 +21,7 @@ func Each(filters ...Filter) <-chan string {
 	close(c) // No data sent to first filter
 	for _, f := range filters {
 		next := make(chan string, 10000)
-		f(c, next)
+		go f(c, next)
 		c = next
 	}
 	return c

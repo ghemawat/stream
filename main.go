@@ -15,7 +15,9 @@ import (
 
 type Filter func(<-chan string, chan<- string)
 
-// Return a channel that contains all output emitted by a sequence of filter.
+// Each() returns a channel that contains all output emitted by a
+// sequence of filters. The sequence of filters is fed an empty stream
+// as the input.
 func Each(filters ...Filter) <-chan string {
 	c := make(chan string, 0)
 	close(c) // No data sent to first filter
@@ -30,18 +32,22 @@ func Each(filters ...Filter) <-chan string {
 	return c // will contain output of last filter
 }
 
+// Print prints all output emitted by a sequence of filters. The
+// sequence of filters is fed an empty stream as the input.
 func Print(filters ...Filter) {
 	for s := range Each(filters...) {
 		fmt.Println(s)
 	}
 }
 
+// copydata copies all items read from in to out.
 func copydata(in <-chan string, out chan<- string) {
 	for s := range in {
 		out <- s
 	}
 }
 
+// Echo copies its input and then emits item.
 func Echo(item string) Filter {
 	return func(in <-chan string, out chan<- string) {
 		copydata(in, out)
@@ -49,6 +55,7 @@ func Echo(item string) Filter {
 	}
 }
 
+// Seq copies its input and then emits the integers x..y
 func Seq(x, y int) Filter {
 	return func(in <-chan string, out chan<- string) {
 		copydata(in, out)
@@ -58,6 +65,7 @@ func Seq(x, y int) Filter {
 	}
 }
 
+// If emits every input x for which fn(x) is true.
 func If(fn func(string) bool) Filter {
 	return func(in <-chan string, out chan<- string) {
 		for s := range in {
@@ -68,16 +76,19 @@ func If(fn func(string) bool) Filter {
 	}
 }
 
+// Grep emits every input x that matches the regular expression r.
 func Grep(r string) Filter {
 	re := regexp.MustCompile(r)
 	return If(re.MatchString)
 }
 
+// GrepNot emits every input x that does not match the regular expression r.
 func GrepNot(r string) Filter {
 	re := regexp.MustCompile(r)
 	return If(func(s string) bool { return !re.MatchString(s) })
 }
 
+// Uniq squashes adjacent identical items in in into a single output.
 func Uniq(in <-chan string, out chan<- string) {
 	first := true
 	last := ""
@@ -90,6 +101,8 @@ func Uniq(in <-chan string, out chan<- string) {
 	}
 }
 
+// UniqWithCount squashes adjacent identical items in in into a single
+// output prefixed with the count of identical items.
 func UniqWithCount(in <-chan string, out chan<- string) {
 	current := ""
 	count := 0
@@ -108,6 +121,8 @@ func UniqWithCount(in <-chan string, out chan<- string) {
 	}
 }
 
+// Apply calls fn(x) in order for every item x.  It yields the first
+// result of fn(x) iff the second result of fn(x) is true.
 func Apply(fn func(string) (string, bool)) Filter {
 	return func(in <-chan string, out chan<- string) {
 		for s := range in {
@@ -118,6 +133,8 @@ func Apply(fn func(string) (string, bool)) Filter {
 	}
 }
 
+// Apply calls fn(x) for every item x in a pool of n goroutines.
+// It yields the first result of fn(x) iff the second result of fn(x) is true.
 func ApplyParallel(n int, fn func(string) (string, bool)) Filter {
 	// TODO: Maintain input order?
 	// (a) Input goroutine generates <index, str> pairs
@@ -385,5 +402,5 @@ func main() {
 	Print(Echo("=== files ==="), Find(DIRS, "/home/sanjay/tmp/x"))
 
 	// Reconcile part 1
-	// Print(FindFiles(dir).To(ApplyParallel(4, hash)))
+	// Print(Find(FILES, dir), ApplyParallel(4, hash))
 }

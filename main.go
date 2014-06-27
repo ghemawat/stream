@@ -131,6 +131,7 @@ func Apply(fn func(string) (string, bool)) Filter {
 }
 
 func ApplyParallel(n int, fn func(string) (string, bool)) Filter {
+	// TODO: Maintain input order?
 	return func(in <-chan string, out chan<- string) {
 		wg := &sync.WaitGroup{}
 		wg.Add(n)

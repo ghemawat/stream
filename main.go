@@ -5,10 +5,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/sha1"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -219,11 +221,11 @@ func Text(n int) SortPart {
 		switch {
 		case a1 < b1:
 			return -1
-		case b1 < a1:
+		case a1 > b1:
 			return +1
 		case a2 < b2:
 			return -1
-		case b2 < a2:
+		case a2 > b2:
 			return +1
 		}
 		return 0
@@ -239,7 +241,7 @@ func Num(n int) SortPart {
 		switch {
 		case a1 < b1:
 			return -1
-		case b1 < a1:
+		case a1 > b1:
 			return +1
 		}
 
@@ -259,7 +261,7 @@ func Num(n int) SortPart {
 		switch {
 		case a3 < b3:
 			return -1
-		case b3 < a3:
+		case a3 > b3:
 			return +1
 		}
 		return 0
@@ -353,6 +355,21 @@ func Cat(filenames ...string) Filter {
 				arg.out <- scanner.Text()
 			}
 			file.Close()
+		}
+	}
+}
+
+func System(cmd string, args ...string) Filter {
+	return func(arg Arg) {
+		copydata(arg)
+		out, err := exec.Command(cmd, args...).Output()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		scanner := bufio.NewScanner(bytes.NewBuffer(out))
+		for scanner.Scan() {
+			arg.out <- scanner.Text()
 		}
 	}
 }
@@ -457,20 +474,22 @@ func main() {
 		out <- fmt.Sprintf("%x %s", hasher.Sum(nil), f)
 	}
 
-	d := Sequence(
-		Echo("8 1"),
-		Echo("8 3 x"),
-		Echo("8 3 w"),
-		Echo("8 2"),
-		Echo("4 5"),
-		Echo("9 3"),
-		Echo("12 13"),
-		Echo("12 5"),
+	d := Echo(
+		"8 1",
+		"8 3 x",
+		"8 3 w",
+		"8 2",
+		"4 5",
+		"9 3",
+		"12 13",
+		"12 5",
 	)
 	Print(d, Sort(Text(1), Text(2)), Echo("----"))
 	Print(d, Sort(Num(1), Num(2)), Echo("----"))
 	Print(d, Sort(Text(1), Num(2)), Echo("----"))
 	Print(d, Sort(Rev(Num(1)), Num(2)), Echo("----"))
+	Print(d, Sort(), Echo("----"))
+	Print(d, Sort(Text(2)), Echo("----"))
 
 	Print(Numbers(1, 10),
 		Grep("3"),
@@ -524,5 +543,10 @@ func main() {
 		GrepNot(`/home/sanjay/(\.Trash|Library)/`),
 		Parallel(4, hash),
 		Sort(Text(2)),
+	)
+
+	Print(
+		System("find", "/home/sanjay/tmp/y", "-ls"),
+		Sort(Num(7), Text(11)),
 	)
 }

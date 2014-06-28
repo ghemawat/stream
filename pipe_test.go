@@ -271,8 +271,13 @@ func ExmapleSelect() {
 }
 
 func ExampleFind() {
-	Print(Find(FILES, "."))
-	Print(Find(DIRS, "."))
+	Print(Find(DIRS, "."), GrepNot("git"), Echo("---"))
+	Print(Find(FILES, "."), Grep("pipe"))
+	// Output:
+	// .
+	// ---
+	// pipe.go
+	// pipe_test.go
 }
 
 func ExampleCat() {
@@ -282,12 +287,12 @@ func ExampleCat() {
 func ExampleSystem() {
 	Print(
 		System("find", ".", "-type", "f", "-print"),
-		Grep(`^\./pipe`),
+		Grep(`^\./pipe.*\.go$`),
 		Sort(),
 	)
 	// TODO: Remove output checking if it becomes fragile.
+
 	// Output:
-	// ./pipe
 	// ./pipe.go
 	// ./pipe_test.go
 }

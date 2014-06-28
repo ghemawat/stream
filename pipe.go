@@ -1,14 +1,12 @@
 // TODO:
 //
 // Fork and merge filter sequences.
-package main
+package pipe
 
 import (
 	"bufio"
 	"bytes"
-	"crypto/sha1"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -470,113 +468,4 @@ func Select(columns ...int) Filter {
 			arg.out <- result
 		}
 	}
-}
-
-func dump(filters ...Filter) {
-	fmt.Println("-------")
-	Print(filters...)
-}
-
-func main() {
-	dbl := func(arg Arg) {
-		for s := range arg.in {
-			arg.out <- s
-			arg.out <- s
-		}
-	}
-
-	hash := func(f string, out chan<- string) {
-		file, err := os.Open(f)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-		hasher := sha1.New()
-		_, err = io.Copy(hasher, file)
-		file.Close()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-		out <- fmt.Sprintf("%x %s", hasher.Sum(nil), f)
-	}
-
-	d := Echo(
-		"8 1",
-		"8 3 x",
-		"8 3 w",
-		"8 2",
-		"4 5",
-		"9 3",
-		"12 13",
-		"12 5",
-	)
-	dump(d, Sort(Text(1), Text(2)))
-	dump(d, Sort(Num(1), Num(2)))
-	dump(d, Sort(Text(1), Num(2)))
-	dump(d, Sort(Rev(Num(1)), Num(2)))
-	dump(d, Sort())
-	dump(d, Sort(Text(2)))
-
-	dump(Sequence())
-	dump(Sequence(Echo("1 of 1")))
-	dump(Sequence(Echo("1 of 2"), Echo("2 of 2")))
-
-	dump(Numbers(1, 100),
-		Grep("3"),
-		GrepNot("7"),
-		dbl,
-		Uniq,
-		ReplaceMatch("^(.)$", "x$1"),
-		Sort(),
-		ReplaceMatch("^(.)", "$1 "),
-		dbl,
-		DeleteMatch(" .$"),
-		UniqWithCount,
-		Sort(Num(1)),
-		Reverse,
-	)
-
-	dump(Find(FILES, "/home/sanjay/tmp"),
-		Grep("/tmp/x"),
-		GrepNot("/sub2/"),
-		Parallel(4, hash),
-		ReplaceMatch(" /home/sanjay/", " HOME/"))
-
-	dump(Echo("a"), Echo("b"), Echo("c"))
-
-	dump(Cat("/home/sanjay/.bashrc"),
-		First(10),
-		NumberLines,
-		Cut(1, 50),
-		ReplaceMatch("^", "LINE:"),
-		Last(3))
-
-	dump(Numbers(1, 10), DropFirst(8))
-	dump(Numbers(1, 10), DropLast(7))
-
-	dump(Find(ALL, "/home/sanjay/tmp/x"))
-	dump(Find(FILES, "/home/sanjay/tmp/x"))
-	dump(Find(DIRS, "/home/sanjay/tmp/x"))
-
-	dump(
-		System("find", "/home/sanjay/tmp/y", "-ls"),
-		Sort(Num(7), Text(11)),
-	)
-
-	// Reconcile example
-	dump(
-		Find(FILES, "/home/sanjay/tmp/y"),
-		GrepNot(`/home/sanjay/(\.Trash|Library)/`),
-		Parallel(4, hash),
-		Sort(Text(2)),
-	)
-
-	// Reconcile example (alternate)
-	dump(
-		System("find", "/home/sanjay/tmp/y", "-type", "f", "-print"),
-		Parallel(4, hash),
-		Sort(Text(2)),
-	)
-
 }

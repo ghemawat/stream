@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"unicode"
 )
 
 type Arg struct {
@@ -181,68 +182,128 @@ func DeleteMatch(r string) Filter {
 	return ReplaceMatch(r, "")
 }
 
-func Sort(arg Arg) {
-	var data []string
-	for s := range arg.in {
-		data = append(data, s)
-	}
-	sort.Strings(data)
-	for _, s := range data {
-		arg.out <- s
-	}
-}
+// Function that compares one sort key.
+type SortPart func(a, b string) int
 
-type fnStringSlice struct {
-	sort.StringSlice
-	fn func(string, string) bool
-}
-
-func (fs fnStringSlice) Less(i, j int) bool {
-	return fs.fn(fs.StringSlice[i], fs.StringSlice[j])
-}
-
-func SortBy(fn func(string, string) bool) Filter {
-	return func(arg Arg) {
-		var data fnStringSlice
-		data.fn = fn
-		for s := range arg.in {
-			data.StringSlice = append(data.StringSlice, s)
+// column(s, n) returns 0,x where x is the nth column (1-based) in s,
+// or -1,"" if s does not have n columns.
+func column(s string, n int) (int, string) {
+	currentColumn := 0
+	wstart := -1
+	for i, c := range s {
+		sp := unicode.IsSpace(c)
+		switch {
+		case !sp && wstart < 0: // Start of word
+			currentColumn++
+			wstart = i
+		case sp && wstart >= 0 && currentColumn == n: // End of nth col
+			return 0, s[wstart:i]
+		case sp && wstart >= 0: // End of another column
+			wstart = -1
 		}
-		sort.Sort(data)
-		for _, s := range data.StringSlice {
+	}
+	if wstart >= 0 && currentColumn == n { // nth column ends string
+		return 0, s[wstart:]
+	}
+
+	// col not found. Treat as a value smaller than all strings
+	return -1, ""
+}
+
+// Text returns a partial sort predicate that compares the nth column
+// lexicographically.
+func Text(n int) SortPart {
+	return func(a, b string) int {
+		a1, a2 := column(a, n)
+		b1, b2 := column(b, n)
+		switch {
+		case a1 < b1:
+			return -1
+		case b1 < a1:
+			return +1
+		case a2 < b2:
+			return -1
+		case b2 < a2:
+			return +1
+		}
+		return 0
+	}
+}
+
+// Num returns a partial sort predicate that compares the nth column
+// numerically.
+func Num(n int) SortPart {
+	return func(a, b string) int {
+		a1, a2 := column(a, n)
+		b1, b2 := column(b, n)
+		switch {
+		case a1 < b1:
+			return -1
+		case b1 < a1:
+			return +1
+		}
+
+		// Convert columns from strings to numbers.
+		a3, a4 := strconv.ParseInt(a2, 0, 64)
+		b3, b4 := strconv.ParseInt(b2, 0, 64)
+
+		if a4 != b4 {
+			// Errors sort after numbers.
+			if a4 != nil { // a had a parse error, b did not
+				return +1
+			} else { // b had a parse error, a did not
+				return -1
+			}
+		}
+
+		switch {
+		case a3 < b3:
+			return -1
+		case b3 < a3:
+			return +1
+		}
+		return 0
+	}
+}
+
+func Rev(p SortPart) SortPart {
+	return func(a, b string) int {
+		return p(b, a)
+	}
+}
+
+// columns allows sorting by a sequence of SortParts.
+type columns struct {
+	Data  []string
+	Parts []SortPart
+}
+
+func (cs columns) Len() int      { return len(cs.Data) }
+func (cs columns) Swap(i, j int) { cs.Data[i], cs.Data[j] = cs.Data[j], cs.Data[i] }
+func (cs columns) Less(i, j int) bool {
+	a := cs.Data[i]
+	b := cs.Data[j]
+
+	for _, p := range cs.Parts {
+		c := p(a, b)
+		if c != 0 {
+			return c < 0
+		}
+	}
+	return a < b
+}
+
+func Sort(parts ...SortPart) Filter {
+	return func(arg Arg) {
+		cs := columns{Parts: parts}
+		for s := range arg.in {
+			cs.Data = append(cs.Data, s)
+		}
+		sort.Sort(cs)
+		for _, s := range cs.Data {
 			arg.out <- s
 		}
 	}
-}
-
-func SortNumeric(column int) Filter {
-	toNum := func(s string) (int, int64) {
-		r := regexp.MustCompile(`\s+`).Split(s, -1)
-		for len(r) > 0 && r[0] == "" {
-			r = r[1:]
-		}
-		for len(r) > 0 && r[len(r)-1] == "" {
-			r = r[:len(r)-1]
-		}
-		if len(r) <= column {
-			// Missing data is sorted before all numbers
-			return -1, 0
-		}
-		x, err := strconv.ParseInt(r[column], 0, 64)
-		if err != nil {
-			// Bad data is sorted after all numbers
-			return +1, 0
-		}
-		return 0, x
-	}
-	return SortBy(func(a, b string) bool {
-		a1, a2 := toNum(a)
-		b1, b2 := toNum(b)
-		if a1 != b1 {
-			return a1 < b1
-		}
-		return a2 < b2
-	})
 }
 
 func Reverse(arg Arg) {
@@ -396,6 +457,21 @@ func main() {
 		out <- fmt.Sprintf("%x %s", hasher.Sum(nil), f)
 	}
 
+	d := Sequence(
+		Echo("8 1"),
+		Echo("8 3 x"),
+		Echo("8 3 w"),
+		Echo("8 2"),
+		Echo("4 5"),
+		Echo("9 3"),
+		Echo("12 13"),
+		Echo("12 5"),
+	)
+	Print(d, Sort(Text(1), Text(2)), Echo("----"))
+	Print(d, Sort(Num(1), Num(2)), Echo("----"))
+	Print(d, Sort(Text(1), Num(2)), Echo("----"))
+	Print(d, Sort(Rev(Num(1)), Num(2)), Echo("----"))
+
 	Print(Numbers(1, 10),
 		Grep("3"),
 		dbl)
@@ -410,12 +486,12 @@ func main() {
 		dbl,
 		Uniq,
 		ReplaceMatch("^(.)$", "x$1"),
-		Sort,
+		Sort(),
 		ReplaceMatch("^(.)", "$1 "),
 		dbl,
 		DeleteMatch(" .$"),
 		UniqWithCount,
-		SortNumeric(1),
+		Sort(Num(1)),
 		Reverse,
 		Echo("==="))
 
@@ -441,10 +517,12 @@ func main() {
 	Print(Echo("=== dirs ==="), Find(FILES, "/home/sanjay/tmp/x"))
 	Print(Echo("=== files ==="), Find(DIRS, "/home/sanjay/tmp/x"))
 
-	// Reconcile part 1
+	// Reconcile example
 	Print(Echo("------------"))
 	Print(
 		Find(FILES, "/home/sanjay/tmp/y"),
+		GrepNot(`/home/sanjay/(\.Trash|Library)/`),
 		Parallel(4, hash),
+		Sort(Text(2)),
 	)
 }

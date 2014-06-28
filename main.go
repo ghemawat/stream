@@ -31,19 +31,12 @@ func Each(filters ...Filter) <-chan string {
 
 func Sequence(filters ...Filter) Filter {
 	return func(in <-chan string, out chan<- string) {
-		if len(filters) == 0 {
-			copydata(in, out)
-			return
+		for _, f := range filters {
+			c := make(chan string, 10000)
+			go runAndClose(f, in, c)
+			in = c
 		}
-		for i, f := range filters {
-			if i < len(filters)-1 {
-				c := make(chan string, 10000)
-				go runAndClose(f, in, c)
-				in = c
-			} else {
-				go runAndClose(f, in, out)
-			}
-		}
+		copydata(in, out)
 	}
 }
 

@@ -94,6 +94,62 @@ func Numbers(x, y int) Filter {
 	}
 }
 
+type FindType int
+
+const (
+	FILES    FindType = 1
+	DIRS     FindType = 2
+	SYMLINKS FindType = 4
+	ALL      FindType = FILES | DIRS | SYMLINKS
+)
+
+func Find(ft FindType, dir string) Filter {
+	return func(arg Arg) {
+		copydata(arg)
+		filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
+			if ft&FILES != 0 && s.Mode().IsRegular() ||
+				ft&DIRS != 0 && s.Mode().IsDir() ||
+				ft&SYMLINKS != 0 && s.Mode()&os.ModeSymlink != 0 {
+				arg.out <- f
+			}
+			return nil
+		})
+	}
+}
+
+func Cat(filenames ...string) Filter {
+	return func(arg Arg) {
+		copydata(arg)
+		for _, f := range filenames {
+			file, err := os.Open(f)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				continue
+			}
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				arg.out <- scanner.Text()
+			}
+			file.Close()
+		}
+	}
+}
+
+func System(cmd string, args ...string) Filter {
+	return func(arg Arg) {
+		copydata(arg)
+		out, err := exec.Command(cmd, args...).Output()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		scanner := bufio.NewScanner(bytes.NewBuffer(out))
+		for scanner.Scan() {
+			arg.out <- scanner.Text()
+		}
+	}
+}
+
 // If emits every input x for which fn(x) is true.
 func If(fn func(string) bool) Filter {
 	return func(arg Arg) {
@@ -315,62 +371,6 @@ func Reverse(arg Arg) {
 	}
 	for i := len(data) - 1; i >= 0; i-- {
 		arg.out <- data[i]
-	}
-}
-
-type FindType int
-
-const (
-	FILES    FindType = 1
-	DIRS     FindType = 2
-	SYMLINKS FindType = 4
-	ALL      FindType = FILES | DIRS | SYMLINKS
-)
-
-func Find(ft FindType, dir string) Filter {
-	return func(arg Arg) {
-		copydata(arg)
-		filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
-			if ft&FILES != 0 && s.Mode().IsRegular() ||
-				ft&DIRS != 0 && s.Mode().IsDir() ||
-				ft&SYMLINKS != 0 && s.Mode()&os.ModeSymlink != 0 {
-				arg.out <- f
-			}
-			return nil
-		})
-	}
-}
-
-func Cat(filenames ...string) Filter {
-	return func(arg Arg) {
-		copydata(arg)
-		for _, f := range filenames {
-			file, err := os.Open(f)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				continue
-			}
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				arg.out <- scanner.Text()
-			}
-			file.Close()
-		}
-	}
-}
-
-func System(cmd string, args ...string) Filter {
-	return func(arg Arg) {
-		copydata(arg)
-		out, err := exec.Command(cmd, args...).Output()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
-		}
-		scanner := bufio.NewScanner(bytes.NewBuffer(out))
-		for scanner.Scan() {
-			arg.out <- scanner.Text()
-		}
 	}
 }
 

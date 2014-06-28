@@ -472,6 +472,11 @@ func Select(columns ...int) Filter {
 	}
 }
 
+func dump(filters ...Filter) {
+	fmt.Println("-------")
+	Print(filters...)
+}
+
 func main() {
 	dbl := func(arg Arg) {
 		for s := range arg.in {
@@ -506,22 +511,22 @@ func main() {
 		"12 13",
 		"12 5",
 	)
-	Print(d, Sort(Text(1), Text(2)), Echo("----"))
-	Print(d, Sort(Num(1), Num(2)), Echo("----"))
-	Print(d, Sort(Text(1), Num(2)), Echo("----"))
-	Print(d, Sort(Rev(Num(1)), Num(2)), Echo("----"))
-	Print(d, Sort(), Echo("----"))
-	Print(d, Sort(Text(2)), Echo("----"))
+	dump(d, Sort(Text(1), Text(2)))
+	dump(d, Sort(Num(1), Num(2)))
+	dump(d, Sort(Text(1), Num(2)))
+	dump(d, Sort(Rev(Num(1)), Num(2)))
+	dump(d, Sort())
+	dump(d, Sort(Text(2)))
 
-	Print(Numbers(1, 10),
+	dump(Numbers(1, 10),
 		Grep("3"),
 		dbl)
 
-	Print(Sequence())
-	Print(Sequence(Echo("1 of 1")))
-	Print(Sequence(Echo("1 of 2"), Echo("2 of 2")))
+	dump(Sequence())
+	dump(Sequence(Echo("1 of 1")))
+	dump(Sequence(Echo("1 of 2"), Echo("2 of 2")))
 
-	Print(Numbers(1, 100),
+	dump(Numbers(1, 100),
 		Grep("3"),
 		GrepNot("7"),
 		dbl,
@@ -534,38 +539,37 @@ func main() {
 		UniqWithCount,
 		Sort(Num(1)),
 		Reverse,
-		Echo("==="))
+	)
 
-	Print(Find(FILES, "/home/sanjay/tmp"),
+	dump(Find(FILES, "/home/sanjay/tmp"),
 		Grep("/tmp/x"),
 		GrepNot("/sub2/"),
 		Parallel(4, hash),
 		ReplaceMatch(" /home/sanjay/", " HOME/"))
 
-	Print(Echo("a"), Echo("b"), Echo("c"))
+	dump(Echo("a"), Echo("b"), Echo("c"))
 
-	Print(Cat("/home/sanjay/.bashrc"),
+	dump(Cat("/home/sanjay/.bashrc"),
 		First(10),
 		NumberLines,
 		Cut(1, 50),
 		ReplaceMatch("^", "LINE:"),
 		Last(3))
 
-	Print(Numbers(1, 10), DropFirst(8))
-	Print(Numbers(1, 10), DropLast(7))
+	dump(Numbers(1, 10), DropFirst(8))
+	dump(Numbers(1, 10), DropLast(7))
 
-	Print(Echo("=== all ==="), Find(ALL, "/home/sanjay/tmp/x"))
-	Print(Echo("=== dirs ==="), Find(FILES, "/home/sanjay/tmp/x"))
-	Print(Echo("=== files ==="), Find(DIRS, "/home/sanjay/tmp/x"))
+	dump(Find(ALL, "/home/sanjay/tmp/x"))
+	dump(Find(FILES, "/home/sanjay/tmp/x"))
+	dump(Find(DIRS, "/home/sanjay/tmp/x"))
 
-	Print(
+	dump(
 		System("find", "/home/sanjay/tmp/y", "-ls"),
 		Sort(Num(7), Text(11)),
 	)
 
 	// Reconcile example
-	Print(Echo("------------"))
-	Print(
+	dump(
 		Find(FILES, "/home/sanjay/tmp/y"),
 		GrepNot(`/home/sanjay/(\.Trash|Library)/`),
 		Parallel(4, hash),
@@ -573,8 +577,7 @@ func main() {
 	)
 
 	// Reconcile example (alternate)
-	Print(Echo("------------"))
-	Print(
+	dump(
 		System("find", "/home/sanjay/tmp/y", "-type", "f", "-print"),
 		Parallel(4, hash),
 		Sort(Text(2)),

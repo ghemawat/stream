@@ -377,7 +377,8 @@ func Cut(start, end int) Filter {
 }
 
 func main() {
-	dbl := func(arg Arg) {
+	dbl := Apply(func(s string, out chan<- string) { out <- s; out <- s })
+	_ = func(arg Arg) {
 		for s := range arg.in {
 			arg.out <- s
 			arg.out <- s

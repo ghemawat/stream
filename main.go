@@ -41,12 +41,13 @@ func Each(filters ...Filter) <-chan string {
 // Sequence returns a filter that is the concatenation of all filter arguments.
 func Sequence(filters ...Filter) Filter {
 	return func(arg Arg) {
+		in := arg.in
 		for _, f := range filters {
 			c := make(chan string, 10000)
-			go runAndClose(f, arg)
-			arg.in = c
+			go runAndClose(f, Arg{in, c})
+			in = c
 		}
-		copydata(arg)
+		copydata(Arg{in, arg.out})
 	}
 }
 
@@ -377,8 +378,11 @@ func Cut(start, end int) Filter {
 }
 
 func main() {
-	dbl := Apply(func(s string, out chan<- string) { out <- s; out <- s })
-	_ = func(arg Arg) {
+	_ = Apply(func(s string, out chan<- string) {
+		out <- s
+		out <- s
+	})
+	dbl := func(arg Arg) {
 		for s := range arg.in {
 			arg.out <- s
 			arg.out <- s
@@ -400,6 +404,10 @@ func main() {
 		}
 		out <- fmt.Sprintf("%x %s", hasher.Sum(nil), f)
 	}
+
+	Print(Numbers(1, 10),
+		Grep("3"),
+		dbl)
 
 	Print(Sequence())
 	Print(Sequence(Echo("1 of 1")))

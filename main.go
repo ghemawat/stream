@@ -1,3 +1,6 @@
+// TODO:
+//
+// Fork and merge filter sequences.
 package main
 
 import (
@@ -13,30 +16,37 @@ import (
 	"sync"
 )
 
+type Arg struct {
+	in  <-chan string
+	out chan<- string
+	// TODO: add an error channel here?
+}
+
 // Filter reads a sequence of strings from a channel and produces a
 // sequence on another channel.  Many implementations of Filter are
 // provided.
-type Filter func(<-chan string, chan<- string)
+type Filter func(Arg)
 
 // Each() returns a channel that contains all output emitted by a
 // sequence of filters. The sequence of filters is fed an empty stream
 // as the input.
 func Each(filters ...Filter) <-chan string {
 	in := make(chan string, 0)
-	close(in) // No data sent to first filter
+	close(in)
 	out := make(chan string, 10000)
-	go runAndClose(Sequence(filters...), in, out)
+	go runAndClose(Sequence(filters...), Arg{in, out})
 	return out
 }
 
+// Sequence returns a filter that is the concatenation of all filter arguments.
 func Sequence(filters ...Filter) Filter {
-	return func(in <-chan string, out chan<- string) {
+	return func(arg Arg) {
 		for _, f := range filters {
 			c := make(chan string, 10000)
-			go runAndClose(f, in, c)
-			in = c
+			go runAndClose(f, arg)
+			arg.in = c
 		}
-		copydata(in, out)
+		copydata(arg)
 	}
 }
 
@@ -48,44 +58,44 @@ func Print(filters ...Filter) {
 	}
 }
 
-func runAndClose(f Filter, in <-chan string, out chan<- string) {
-	f(in, out)
-	close(out)
+func runAndClose(f Filter, arg Arg) {
+	f(arg)
+	close(arg.out)
 }
 
 // copydata copies all items read from in to out.
-func copydata(in <-chan string, out chan<- string) {
-	for s := range in {
-		out <- s
+func copydata(arg Arg) {
+	for s := range arg.in {
+		arg.out <- s
 	}
 }
 
 // Echo copies its input and then emits item.
 func Echo(items ...string) Filter {
-	return func(in <-chan string, out chan<- string) {
-		copydata(in, out)
+	return func(arg Arg) {
+		copydata(arg)
 		for _, s := range items {
-			out <- s
+			arg.out <- s
 		}
 	}
 }
 
 // Numbers copies its input and then emits the integers x..y
 func Numbers(x, y int) Filter {
-	return func(in <-chan string, out chan<- string) {
-		copydata(in, out)
+	return func(arg Arg) {
+		copydata(arg)
 		for i := x; i <= y; i++ {
-			out <- fmt.Sprintf("%d", i)
+			arg.out <- fmt.Sprintf("%d", i)
 		}
 	}
 }
 
 // If emits every input x for which fn(x) is true.
 func If(fn func(string) bool) Filter {
-	return func(in <-chan string, out chan<- string) {
-		for s := range in {
+	return func(arg Arg) {
+		for s := range arg.in {
 			if fn(s) {
-				out <- s
+				arg.out <- s
 			}
 		}
 	}
@@ -104,12 +114,12 @@ func GrepNot(r string) Filter {
 }
 
 // Uniq squashes adjacent identical items in in into a single output.
-func Uniq(in <-chan string, out chan<- string) {
+func Uniq(arg Arg) {
 	first := true
 	last := ""
-	for s := range in {
+	for s := range arg.in {
 		if first || last != s {
-			out <- s
+			arg.out <- s
 		}
 		last = s
 		first = false
@@ -118,13 +128,13 @@ func Uniq(in <-chan string, out chan<- string) {
 
 // UniqWithCount squashes adjacent identical items in in into a single
 // output prefixed with the count of identical items.
-func UniqWithCount(in <-chan string, out chan<- string) {
+func UniqWithCount(arg Arg) {
 	current := ""
 	count := 0
-	for s := range in {
+	for s := range arg.in {
 		if s != current {
 			if count > 0 {
-				out <- fmt.Sprintf("%d %s", count, current)
+				arg.out <- fmt.Sprintf("%d %s", count, current)
 			}
 			count = 0
 			current = s
@@ -132,15 +142,15 @@ func UniqWithCount(in <-chan string, out chan<- string) {
 		count++
 	}
 	if count > 0 {
-		out <- fmt.Sprintf("%d %s", count, current)
+		arg.out <- fmt.Sprintf("%d %s", count, current)
 	}
 }
 
 // Apply calls fn(x, out) in order for every item x.
 func Apply(fn func(string, chan<- string)) Filter {
-	return func(in <-chan string, out chan<- string) {
-		for s := range in {
-			fn(s, out)
+	return func(arg Arg) {
+		for s := range arg.in {
+			fn(s, arg.out)
 		}
 	}
 }
@@ -151,13 +161,13 @@ func ApplyParallel(n int, fn func(string, chan<- string)) Filter {
 	// (a) Input goroutine generates <index, str> pairs
 	// (b) n appliers read pairs and produce <index, fn(str)> pairs
 	// (c) Output goroutine reads and emits in order
-	return func(in <-chan string, out chan<- string) {
+	return func(arg Arg) {
 		wg := &sync.WaitGroup{}
 		wg.Add(n)
 		for i := 0; i < n; i++ {
 			go func() {
-				for s := range in {
-					fn(s, out)
+				for s := range arg.in {
+					fn(s, arg.out)
 				}
 				wg.Done()
 			}()
@@ -177,14 +187,14 @@ func DeleteMatch(r string) Filter {
 	return ReplaceMatch(r, "")
 }
 
-func Sort(in <-chan string, out chan<- string) {
+func Sort(arg Arg) {
 	var data []string
-	for s := range in {
+	for s := range arg.in {
 		data = append(data, s)
 	}
 	sort.Strings(data)
 	for _, s := range data {
-		out <- s
+		arg.out <- s
 	}
 }
 
@@ -198,15 +208,15 @@ func (fs fnStringSlice) Less(i, j int) bool {
 }
 
 func SortBy(fn func(string, string) bool) Filter {
-	return func(in <-chan string, out chan<- string) {
+	return func(arg Arg) {
 		var data fnStringSlice
 		data.fn = fn
-		for s := range in {
+		for s := range arg.in {
 			data.StringSlice = append(data.StringSlice, s)
 		}
 		sort.Sort(data)
 		for _, s := range data.StringSlice {
-			out <- s
+			arg.out <- s
 		}
 	}
 }
@@ -241,13 +251,13 @@ func SortNumeric(column int) Filter {
 	})
 }
 
-func Reverse(in <-chan string, out chan<- string) {
+func Reverse(arg Arg) {
 	var data []string
-	for s := range in {
+	for s := range arg.in {
 		data = append(data, s)
 	}
 	for i := len(data) - 1; i >= 0; i-- {
-		out <- data[i]
+		arg.out <- data[i]
 	}
 }
 
@@ -261,13 +271,13 @@ const (
 )
 
 func Find(ft FindType, dir string) Filter {
-	return func(in <-chan string, out chan<- string) {
-		copydata(in, out)
+	return func(arg Arg) {
+		copydata(arg)
 		filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
 			if ft&FILES != 0 && s.Mode().IsRegular() ||
 				ft&DIRS != 0 && s.Mode().IsDir() ||
 				ft&SYMLINKS != 0 && s.Mode()&os.ModeSymlink != 0 {
-				out <- f
+				arg.out <- f
 			}
 			return nil
 		})
@@ -275,8 +285,8 @@ func Find(ft FindType, dir string) Filter {
 }
 
 func Cat(filenames ...string) Filter {
-	return func(in <-chan string, out chan<- string) {
-		copydata(in, out)
+	return func(arg Arg) {
+		copydata(arg)
 		for _, f := range filenames {
 			file, err := os.Open(f)
 			if err != nil {
@@ -285,7 +295,7 @@ func Cat(filenames ...string) Filter {
 			}
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
-				out <- scanner.Text()
+				arg.out <- scanner.Text()
 			}
 			file.Close()
 		}
@@ -293,11 +303,11 @@ func Cat(filenames ...string) Filter {
 }
 
 func First(n int) Filter {
-	return func(in <-chan string, out chan<- string) {
+	return func(arg Arg) {
 		emitted := 0
-		for s := range in {
+		for s := range arg.in {
 			if emitted < n {
-				out <- s
+				arg.out <- s
 				emitted++
 			}
 		}
@@ -305,11 +315,11 @@ func First(n int) Filter {
 }
 
 func DropFirst(n int) Filter {
-	return func(in <-chan string, out chan<- string) {
+	return func(arg Arg) {
 		emitted := 0
-		for s := range in {
+		for s := range arg.in {
 			if emitted >= n {
-				out <- s
+				arg.out <- s
 			}
 			emitted++
 		}
@@ -317,37 +327,37 @@ func DropFirst(n int) Filter {
 }
 
 func Last(n int) Filter {
-	return func(in <-chan string, out chan<- string) {
+	return func(arg Arg) {
 		var buf []string
-		for s := range in {
+		for s := range arg.in {
 			buf = append(buf, s)
 			if len(buf) > n {
 				buf = buf[1:]
 			}
 		}
 		for _, s := range buf {
-			out <- s
+			arg.out <- s
 		}
 	}
 }
 
 func DropLast(n int) Filter {
-	return func(in <-chan string, out chan<- string) {
+	return func(arg Arg) {
 		var buf []string
-		for s := range in {
+		for s := range arg.in {
 			buf = append(buf, s)
 			if len(buf) > n {
-				out <- buf[0]
+				arg.out <- buf[0]
 				buf = buf[1:]
 			}
 		}
 	}
 }
 
-func NumberLines(in <-chan string, out chan<- string) {
+func NumberLines(arg Arg) {
 	line := 1
-	for s := range in {
-		out <- fmt.Sprintf("%5d %s", line, s)
+	for s := range arg.in {
+		arg.out <- fmt.Sprintf("%5d %s", line, s)
 		line++
 	}
 }
@@ -367,10 +377,10 @@ func Cut(start, end int) Filter {
 }
 
 func main() {
-	dbl := func(in <-chan string, out chan<- string) {
-		for s := range in {
-			out <- s
-			out <- s
+	dbl := func(arg Arg) {
+		for s := range arg.in {
+			arg.out <- s
+			arg.out <- s
 		}
 	}
 

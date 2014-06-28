@@ -518,10 +518,6 @@ func main() {
 	dump(d, Sort())
 	dump(d, Sort(Text(2)))
 
-	dump(Numbers(1, 10),
-		Grep("3"),
-		dbl)
-
 	dump(Sequence())
 	dump(Sequence(Echo("1 of 1")))
 	dump(Sequence(Echo("1 of 2"), Echo("2 of 2")))

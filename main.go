@@ -51,10 +51,12 @@ func copydata(in <-chan string, out chan<- string) {
 }
 
 // Echo copies its input and then emits item.
-func Echo(item string) Filter {
+func Echo(items ...string) Filter {
 	return func(in <-chan string, out chan<- string) {
 		copydata(in, out)
-		out <- item
+		for _, s := range items {
+			out <- s
+		}
 	}
 }
 
@@ -262,18 +264,21 @@ func Find(ft FindType, dir string) Filter {
 	}
 }
 
-func FileLines(in <-chan string, out chan<- string) {
-	for f := range in {
-		file, err := os.Open(f)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			continue
+func Cat(filenames ...string) Filter {
+	return func(in <-chan string, out chan<- string) {
+		copydata(in, out)
+		for _, f := range filenames {
+			file, err := os.Open(f)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				continue
+			}
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				out <- scanner.Text()
+			}
+			file.Close()
 		}
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			out <- scanner.Text()
-		}
-		file.Close()
 	}
 }
 
@@ -377,7 +382,7 @@ func main() {
 
 	Print()
 	Print(Echo("a"))
-	Print(Echo("a"), Echo("b"))
+	Print(Echo("a", "b"))
 
 	Print(Seq(1, 100),
 		Grep("3"),
@@ -402,11 +407,11 @@ func main() {
 
 	Print(Echo("a"), Echo("b"), Echo("c"))
 
-	Print(Echo("/home/sanjay/.bashrc"),
-		FileLines,
+	Print(Cat("/home/sanjay/.bashrc"),
 		First(10),
 		NumberLines,
-		Cut(3, 50),
+		Cut(1, 50),
+		ReplaceMatch("^", "LINE:"),
 		Last(3))
 
 	Print(Seq(1, 10), DropFirst(8))

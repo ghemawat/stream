@@ -43,6 +43,86 @@ func ExampleSequence() {
 	// 2 of 2
 }
 
+func ExampleEach() {
+	for s := range Each(Numbers(2, 4)) {
+		fmt.Print(s)
+	}
+	// Output:
+	// 234
+}
+
+func ExampleIf() {
+	Print(Numbers(1, 12), If(func(s string) bool { return len(s) > 1 }))
+	// Output:
+	// 10
+	// 11
+	// 12
+}
+
+func ExampleGrep() {
+	Print(Numbers(1, 12), Grep(".."))
+	// Output:
+	// 10
+	// 11
+	// 12
+}
+
+func ExampleGrepNot() {
+	Print(Numbers(1, 12), GrepNot("^.$"))
+	// Output:
+	// 10
+	// 11
+	// 12
+}
+
+func ExampleUniq() {
+	Print(Echo("a", "b", "b", "c"), Uniq)
+	// Output:
+	// a
+	// b
+	// c
+}
+
+func ExampleUniqWithCount() {
+	Print(Echo("a", "b", "b", "c"), UniqWithCount)
+	// Output:
+	// 1 a
+	// 2 b
+	// 1 c
+}
+
+func ExampleParallel() {
+	Print(
+		Numbers(1, 3),
+		Parallel(4, func(s string, out chan<- string) { out <- s }),
+		Sort(),
+	)
+	// Output:
+	// 1
+	// 2
+	// 3
+}
+
+func ExampleReplaceMatch() {
+	Print(Numbers(1, 5), ReplaceMatch("(3)", "$1$1"))
+	// Output:
+	// 1
+	// 2
+	// 33
+	// 4
+	// 5
+}
+
+func ExampleDeleteMatch() {
+	Print(Numbers(1, 5), DeleteMatch("[24]"))
+	// Output:
+	// 1
+	//
+	// 3
+	//
+	// 5
+}
+
 func sortData() Filter {
 	return Echo(
 		"8 1",
@@ -134,6 +214,84 @@ func ExampleSort_Rev() {
 	// 4 5
 }
 
+func ExampleReverse() {
+	Print(Echo("a", "b"), Reverse)
+	// Output:
+	// b
+	// a
+}
+
+func ExampleFirst() {
+	Print(Numbers(1, 10), First(3))
+	// Output:
+	// 1
+	// 2
+	// 3
+}
+
+func ExampleLast() {
+	Print(Numbers(1, 10), Last(2))
+	// Output:
+	// 9
+	// 10
+}
+
+func ExampleDropFirst() {
+	Print(Numbers(1, 10), DropFirst(8))
+	// Output:
+	// 9
+	// 10
+}
+
+func ExampleDropLast() {
+	Print(Numbers(1, 10), DropLast(8))
+	// Output:
+	// 1
+	// 2
+}
+
+func ExampleNumberLines() {
+	Print(Echo("a", "b"), NumberLines)
+	// Output:
+	//     1 a
+	//     2 b
+}
+
+func ExampleCut() {
+	Print(Echo("hello", "world."), Cut(2, 4))
+	// Output:
+	// llo
+	// rld
+}
+
+func ExmapleSelect() {
+	Print(Echo("hello world"), Select(2, 0, 1))
+	// Output:
+	// world hello world hello
+}
+
+func ExampleFind() {
+	Print(Find(FILES, "."))
+	Print(Find(DIRS, "."))
+}
+
+func ExampleCat() {
+	Print(Cat("pipe_test.go"))
+}
+
+func ExampleSystem() {
+	Print(
+		System("find", ".", "-type", "f", "-print"),
+		Grep(`^\./pipe`),
+		Sort(),
+	)
+	// TODO: Remove output checking if it becomes fragile.
+	// Output:
+	// ./pipe
+	// ./pipe.go
+	// ./pipe_test.go
+}
+
 func ExampleMix() {
 	dbl := func(arg Arg) {
 		for s := range arg.in {
@@ -205,49 +363,4 @@ func ExampleHash() {
 		Sort(Text(2)),
 	)
 
-}
-
-func ExampleFirst() {
-	Print(Numbers(1, 10), First(3))
-	// Output:
-	// 1
-	// 2
-	// 3
-}
-
-func ExampleLast() {
-	Print(Numbers(1, 10), Last(2))
-	// Output:
-	// 9
-	// 10
-}
-
-func ExampleDropFirst() {
-	Print(Numbers(1, 10), DropFirst(8))
-	// Output:
-	// 9
-	// 10
-}
-
-func ExampleDropLast() {
-	Print(Numbers(1, 10), DropLast(8))
-	// Output:
-	// 1
-	// 2
-}
-
-func ExampleFind() {
-	Print(Find(FILES, "."))
-	Print(Find(DIRS, "."))
-}
-
-func ExampleCat() {
-	Print(Cat("pipe_test.go"))
-}
-
-func ExampleCut() {
-	Print(Echo("hello", "world."), Cut(2, 4))
-	// Output:
-	// llo
-	// rld
 }

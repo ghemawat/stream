@@ -536,6 +536,11 @@ func main() {
 	Print(Echo("=== dirs ==="), Find(FILES, "/home/sanjay/tmp/x"))
 	Print(Echo("=== files ==="), Find(DIRS, "/home/sanjay/tmp/x"))
 
+	Print(
+		System("find", "/home/sanjay/tmp/y", "-ls"),
+		Sort(Num(7), Text(11)),
+	)
+
 	// Reconcile example
 	Print(Echo("------------"))
 	Print(
@@ -545,8 +550,11 @@ func main() {
 		Sort(Text(2)),
 	)
 
+	// Reconcile example (alternate)
+	Print(Echo("------------"))
 	Print(
-		System("find", "/home/sanjay/tmp/y", "-ls"),
-		Sort(Num(7), Text(11)),
+		System("find", "/home/sanjay/tmp/y", "-type", "f", "-print"),
+		Parallel(4, hash),
+		Sort(Text(2)),
 	)
 }

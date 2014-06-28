@@ -22,17 +22,22 @@ type Filter func(<-chan string, chan<- string)
 // sequence of filters. The sequence of filters is fed an empty stream
 // as the input.
 func Each(filters ...Filter) <-chan string {
-	c := make(chan string, 0)
-	close(c) // No data sent to first filter
-	for _, f := range filters {
-		next := make(chan string, 10000)
-		go func(x Filter, in <-chan string, out chan<- string) {
-			x(in, out)
-			close(out)
-		}(f, c, next)
-		c = next
+	in := make(chan string, 0)
+	close(in) // No data sent to first filter
+	out := make(chan string, 10000)
+	go runAndClose(Sequence(filters...), in, out)
+	return out
+}
+
+func Sequence(filters ...Filter) Filter {
+	return func(in <-chan string, out chan<- string) {
+		for _, f := range filters {
+			c := make(chan string, 10000)
+			go runAndClose(f, in, c)
+			in = c
+		}
+		copydata(in, out)
 	}
-	return c // will contain output of last filter
 }
 
 // Print prints all output emitted by a sequence of filters. The
@@ -41,6 +46,11 @@ func Print(filters ...Filter) {
 	for s := range Each(filters...) {
 		fmt.Println(s)
 	}
+}
+
+func runAndClose(f Filter, in <-chan string, out chan<- string) {
+	f(in, out)
+	close(out)
 }
 
 // copydata copies all items read from in to out.
@@ -60,8 +70,8 @@ func Echo(items ...string) Filter {
 	}
 }
 
-// Seq copies its input and then emits the integers x..y
-func Seq(x, y int) Filter {
+// Numbers copies its input and then emits the integers x..y
+func Numbers(x, y int) Filter {
 	return func(in <-chan string, out chan<- string) {
 		copydata(in, out)
 		for i := x; i <= y; i++ {
@@ -380,11 +390,11 @@ func main() {
 		out <- fmt.Sprintf("%x %s", hasher.Sum(nil), f)
 	}
 
-	Print()
-	Print(Echo("a"))
-	Print(Echo("a", "b"))
+	Print(Sequence())
+	Print(Sequence(Echo("1 of 1")))
+	Print(Sequence(Echo("1 of 2"), Echo("2 of 2")))
 
-	Print(Seq(1, 100),
+	Print(Numbers(1, 100),
 		Grep("3"),
 		GrepNot("7"),
 		dbl,
@@ -414,8 +424,8 @@ func main() {
 		ReplaceMatch("^", "LINE:"),
 		Last(3))
 
-	Print(Seq(1, 10), DropFirst(8))
-	Print(Seq(1, 10), DropLast(7))
+	Print(Numbers(1, 10), DropFirst(8))
+	Print(Numbers(1, 10), DropLast(7))
 
 	Print(Echo("=== all ==="), Find(ALL, "/home/sanjay/tmp/x"))
 	Print(Echo("=== dirs ==="), Find(FILES, "/home/sanjay/tmp/x"))

@@ -244,8 +244,12 @@ func DeleteMatch(r string) Filter {
 type SortPart func(a, b string) int
 
 // column(s, n) returns 0,x where x is the nth column (1-based) in s,
-// or -1,"" if s does not have n columns.
+// or -1,"" if s does not have n columns.  A zero column number is
+// treated specially: 0,s is returned.
 func column(s string, n int) (int, string) {
+	if n == 0 {
+		return 0, s
+	}
 	currentColumn := 0
 	wstart := -1
 	for i, c := range s {
@@ -450,6 +454,24 @@ func Cut(start, end int) Filter {
 	}
 }
 
+// Prints the columns in order.  Column 0 is interpreted as full string.
+func Select(columns ...int) Filter {
+	return func(arg Arg) {
+		for s := range arg.in {
+			result := ""
+			for _, col := range columns {
+				if e, c := column(s, col); e == 0 && c != "" {
+					if result != "" {
+						result = result + " "
+					}
+					result = result + c
+				}
+			}
+			arg.out <- result
+		}
+	}
+}
+
 func main() {
 	dbl := func(arg Arg) {
 		for s := range arg.in {
@@ -557,4 +579,5 @@ func main() {
 		Parallel(4, hash),
 		Sort(Text(2)),
 	)
+
 }

@@ -147,17 +147,8 @@ func UniqWithCount(arg Arg) {
 	}
 }
 
-// Apply calls fn(x, out) in order for every item x.
-func Apply(fn func(string, chan<- string)) Filter {
-	return func(arg Arg) {
-		for s := range arg.in {
-			fn(s, arg.out)
-		}
-	}
-}
-
-// ApplyParallel calls fn(x, out) for every item x in a pool of n goroutines.
-func ApplyParallel(n int, fn func(string, chan<- string)) Filter {
+// Parallel calls fn(x, out) for every item x in a pool of n goroutines.
+func Parallel(n int, fn func(string, chan<- string)) Filter {
 	// TODO: Maintain input order?
 	// (a) Input goroutine generates <index, str> pairs
 	// (b) n appliers read pairs and produce <index, fn(str)> pairs
@@ -179,9 +170,11 @@ func ApplyParallel(n int, fn func(string, chan<- string)) Filter {
 
 func ReplaceMatch(r, replacement string) Filter {
 	re := regexp.MustCompile(r)
-	return Apply(func(s string, out chan<- string) {
-		out <- re.ReplaceAllString(s, replacement)
-	})
+	return func(arg Arg) {
+		for s := range arg.in {
+			arg.out <- re.ReplaceAllString(s, replacement)
+		}
+	}
 }
 
 func DeleteMatch(r string) Filter {
@@ -364,24 +357,22 @@ func NumberLines(arg Arg) {
 }
 
 func Cut(start, end int) Filter {
-	return Apply(func(s string, out chan<- string) {
-		if len(s) > end {
-			s = s[:end+1]
+	return func(arg Arg) {
+		for s := range arg.in {
+			if len(s) > end {
+				s = s[:end+1]
+			}
+			if len(s) < start {
+				s = ""
+			} else {
+				s = s[start:]
+			}
+			arg.out <- s
 		}
-		if len(s) < start {
-			s = ""
-		} else {
-			s = s[start:]
-		}
-		out <- s
-	})
+	}
 }
 
 func main() {
-	_ = Apply(func(s string, out chan<- string) {
-		out <- s
-		out <- s
-	})
 	dbl := func(arg Arg) {
 		for s := range arg.in {
 			arg.out <- s
@@ -431,7 +422,7 @@ func main() {
 	Print(Find(FILES, "/home/sanjay/tmp"),
 		Grep("/tmp/x"),
 		GrepNot("/sub2/"),
-		ApplyParallel(4, hash),
+		Parallel(4, hash),
 		ReplaceMatch(" /home/sanjay/", " HOME/"))
 
 	Print(Echo("a"), Echo("b"), Echo("c"))
@@ -454,6 +445,6 @@ func main() {
 	Print(Echo("------------"))
 	Print(
 		Find(FILES, "/home/sanjay/tmp/y"),
-		ApplyParallel(4, hash),
+		Parallel(4, hash),
 	)
 }

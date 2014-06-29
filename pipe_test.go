@@ -8,11 +8,6 @@ import (
 	_ "testing"
 )
 
-func dump(filters ...Filter) {
-	fmt.Println("-------")
-	Print(filters...)
-}
-
 func ExampleEmpty() {
 	Print()
 	// Output:
@@ -281,7 +276,9 @@ func ExampleFind() {
 }
 
 func ExampleCat() {
-	Print(Cat("pipe_test.go"))
+	Print(Cat("pipe_test.go"), Grep("^func ExampleCat"))
+	// Output:
+	// func ExampleCat() {
 }
 
 func ExampleSystem() {
@@ -290,7 +287,6 @@ func ExampleSystem() {
 		Grep(`^\./pipe.*\.go$`),
 		Sort(),
 	)
-	// TODO: Remove output checking if it becomes fragile.
 
 	// Output:
 	// ./pipe.go

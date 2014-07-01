@@ -38,8 +38,8 @@ func ExampleSequence() {
 	// 2 of 2
 }
 
-func ExampleEach() {
-	for s := range Each(Numbers(2, 4)) {
+func ExampleForEach() {
+	for s := range ForEach(Numbers(2, 4)) {
 		fmt.Print(s)
 	}
 	// Output:
@@ -315,6 +315,7 @@ func ExampleMix() {
 		Sort(Num(1)),
 		Reverse,
 	)
+
 	// Output:
 	// 18 3
 	// 2 x
@@ -344,24 +345,18 @@ func ExampleHash() {
 		out <- fmt.Sprintf("%x %s", hasher.Sum(nil), f)
 	}
 
+	// Some alternative ways of hashing.
 	Print(
-		Find(FILES, "/home/sanjay/tmp"),
-		Grep("/tmp/x"),
-		GrepNot("/sub2/"),
-		Parallel(4, hash),
-		ReplaceMatch(" /home/sanjay/", " HOME/"))
-
-	Print(
-		Find(FILES, "/home/sanjay/tmp/y"),
-		GrepNot(`/home/sanjay/(\.Trash|Library)/`),
+		Find(FILES, "."),
+		Grep("pipe"),
+		GrepNot("test"),
 		Parallel(4, hash),
 		Sort(Text(2)),
 	)
 
 	Print(
-		System("find", "/home/sanjay/tmp/y", "-type", "f", "-print"),
+		System("find", ".", "-type", "f", "-print"),
 		Parallel(4, hash),
 		Sort(Text(2)),
 	)
-
 }

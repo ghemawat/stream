@@ -8,6 +8,17 @@ import (
 	_ "testing"
 )
 
+func Example() {
+	Print(
+		Find(FILES, "."),
+		Grep(`\.go$`),
+		NumberLines(),
+	)
+	// Output:
+	//     1 pipe.go
+	//     2 pipe_test.go
+}
+
 func ExampleEmpty() {
 	Print()
 	// Output:
@@ -26,24 +37,54 @@ func ExampleMultiple() {
 	// bar
 }
 
-func ExampleSequence() {
+func ExampleSequence_empty() {
 	Print(Sequence())
-	fmt.Println("---")
-	Print(Sequence(Echo("1 of 1")))
+	// Output:
+}
+
+func ExampleSequence_multi() {
 	Print(Sequence(Echo("1 of 2"), Echo("2 of 2")))
 	// Output:
-	// ---
-	// 1 of 1
 	// 1 of 2
 	// 2 of 2
 }
 
+func ExampleSequence_single() {
+	Print(Sequence(Echo("1 of 1")))
+	// Output:
+	// 1 of 1
+}
+
 func ExampleForEach() {
-	for s := range ForEach(Numbers(2, 4)) {
+	for s := range ForEach(Numbers(1, 10), First(3)) {
 		fmt.Print(s)
 	}
 	// Output:
-	// 234
+	// 123
+}
+
+func ExamplePrint() {
+	Print(Echo("a"), Echo("b"), Echo("c"))
+	// Output:
+	// a
+	// b
+	// c
+}
+
+func ExampleEcho() {
+	Print(Echo("hello", "world"))
+	// Output:
+	// hello
+	// world
+}
+
+func ExampleNumbers() {
+	Print(Numbers(2, 5))
+	// Output:
+	// 2
+	// 3
+	// 4
+	// 5
 }
 
 func ExampleIf() {
@@ -71,7 +112,7 @@ func ExampleGrepNot() {
 }
 
 func ExampleUniq() {
-	Print(Echo("a", "b", "b", "c"), Uniq)
+	Print(Echo("a", "b", "b", "c"), Uniq())
 	// Output:
 	// a
 	// b
@@ -79,18 +120,22 @@ func ExampleUniq() {
 }
 
 func ExampleUniqWithCount() {
-	Print(Echo("a", "b", "b", "c"), UniqWithCount)
+	Print(
+		Echo("a", "b", "b", "c"),
+		UniqWithCount(),
+		Sort(Numeric(1)),
+	)
 	// Output:
 	// 1 a
-	// 2 b
 	// 1 c
+	// 2 b
 }
 
 func ExampleParallel() {
 	Print(
 		Numbers(1, 3),
-		Parallel(4, func(s string, out chan<- string) { out <- s }),
-		Sort(),
+		Parallel(2, func(s string, out chan<- string) { out <- s }),
+		Sort(), // Restore any re-ordering caused by Parallel
 	)
 	// Output:
 	// 1
@@ -118,99 +163,114 @@ func ExampleDeleteMatch() {
 	// 5
 }
 
-func sortData() Filter {
-	return Echo(
-		"8 1",
-		"8 3 x",
-		"8 3 w",
-		"8 2",
-		"4 5",
-		"9 3",
-		"12 13",
-		"12 5",
+func ExampleNumeric() {
+	Print(
+		Echo(
+			"a 100",
+			"b 20",
+			"c notanumber", // Will sort last since column 2 is not a number
+			"d",            // Will sort earliest since column 2 is missing
+		),
+		Sort(Numeric(2)),
 	)
+	// Output:
+	// d
+	// b 20
+	// a 100
+	// c notanumber
+}
+
+func ExampleTextual() {
+	Print(
+		Echo(
+			"10 bananas",
+			"20 apples",
+			"30", // Will sort first since column 2 is missing
+		),
+		Sort(Textual(2)),
+	)
+	// Output:
+	// 30
+	// 20 apples
+	// 10 bananas
+}
+
+func ExampleDescending() {
+	Print(
+		Echo(
+			"100",
+			"20",
+			"50",
+		),
+		Sort(Descending(Numeric(1))),
+	)
+	// Output:
+	// 100
+	// 50
+	// 20
 }
 
 func ExampleSort() {
-	Print(sortData(), Sort())
+	Print(Echo("banana", "apple", "cheese", "apple"), Sort())
 	// Output:
-	// 12 13
-	// 12 5
-	// 4 5
-	// 8 1
-	// 8 2
-	// 8 3 w
-	// 8 3 x
-	// 9 3
+	// apple
+	// apple
+	// banana
+	// cheese
+}
+func ExampleSort_twoTextColumns() {
+	Print(
+		Echo(
+			"2 green bananas",
+			"3 red apples",
+			"4 yellow bananas",
+			"5 brown pears",
+			"6 green apples",
+		),
+		Sort(Textual(2), Textual(3)),
+	)
+	// Output:
+	// 5 brown pears
+	// 6 green apples
+	// 2 green bananas
+	// 3 red apples
+	// 4 yellow bananas
 }
 
-func ExampleSort_TextCol() {
-	Print(sortData(), Sort(Text(2)))
+func ExampleSort_twoNumericColumns() {
+	Print(
+		Echo(
+			"1970 12",
+			"1970 6",
+			"1950 6",
+			"1980 9",
+		),
+		Sort(Numeric(1), Numeric(2)))
 	// Output:
-	// 8 1
-	// 12 13
-	// 8 2
-	// 8 3 w
-	// 8 3 x
-	// 9 3
-	// 12 5
-	// 4 5
+	// 1950 6
+	// 1970 6
+	// 1970 12
+	// 1980 9
 }
 
-func ExampleSort_TwoText() {
-	Print(sortData(), Sort(Text(1), Text(2)))
+func ExampleSort_mixedColumns() {
+	Print(
+		Echo(
+			"1970 march",
+			"1970 feb",
+			"1950 june",
+			"1980 sep",
+		),
+		Sort(Numeric(1), Textual(2)))
 	// Output:
-	// 12 13
-	// 12 5
-	// 4 5
-	// 8 1
-	// 8 2
-	// 8 3 w
-	// 8 3 x
-	// 9 3
-}
-
-func ExampleSort_TwoNum() {
-	Print(sortData(), Sort(Num(1), Num(2)))
-	// Output:
-	// 4 5
-	// 8 1
-	// 8 2
-	// 8 3 w
-	// 8 3 x
-	// 9 3
-	// 12 5
-	// 12 13
-}
-
-func ExampleSort_Mix() {
-	Print(sortData(), Sort(Text(1), Num(2)))
-	// Output:
-	// 12 5
-	// 12 13
-	// 4 5
-	// 8 1
-	// 8 2
-	// 8 3 w
-	// 8 3 x
-	// 9 3
-}
-
-func ExampleSort_Rev() {
-	Print(sortData(), Sort(Rev(Num(1)), Num(2)))
-	// Output:
-	// 12 5
-	// 12 13
-	// 9 3
-	// 8 1
-	// 8 2
-	// 8 3 w
-	// 8 3 x
-	// 4 5
+	// 1950 june
+	// 1970 feb
+	// 1970 march
+	// 1980 sep
 }
 
 func ExampleReverse() {
-	Print(Echo("a", "b"), Reverse)
+	Print(Echo("a", "b"), Reverse())
 	// Output:
 	// b
 	// a
@@ -246,7 +306,7 @@ func ExampleDropLast() {
 }
 
 func ExampleNumberLines() {
-	Print(Echo("a", "b"), NumberLines)
+	Print(Echo("a", "b"), NumberLines())
 	// Output:
 	//     1 a
 	//     2 b
@@ -266,13 +326,16 @@ func ExmapleSelect() {
 }
 
 func ExampleFind() {
-	Print(Find(DIRS, "."), GrepNot("git"), Echo("---"))
 	Print(Find(FILES, "."), Grep("pipe"))
 	// Output:
-	// .
-	// ---
 	// pipe.go
 	// pipe_test.go
+}
+
+func ExampleFind_dirs() {
+	Print(Find(DIRS, "."), GrepNot("git"))
+	// Output:
+	// .
 }
 
 func ExampleCat() {
@@ -295,9 +358,9 @@ func ExampleSystem() {
 
 func ExampleMix() {
 	dbl := func(arg Arg) {
-		for s := range arg.in {
-			arg.out <- s
-			arg.out <- s
+		for s := range arg.In {
+			arg.Out <- s
+			arg.Out <- s
 		}
 	}
 
@@ -305,15 +368,15 @@ func ExampleMix() {
 		Grep("3"),
 		GrepNot("7"),
 		dbl,
-		Uniq,
+		Uniq(),
 		ReplaceMatch("^(.)$", "x$1"),
 		Sort(),
 		ReplaceMatch("^(.)", "$1 "),
 		dbl,
 		DeleteMatch(" .$"),
-		UniqWithCount,
-		Sort(Num(1)),
-		Reverse,
+		UniqWithCount(),
+		Sort(Numeric(1)),
+		Reverse(),
 	)
 
 	// Output:
@@ -351,12 +414,12 @@ func ExampleHash() {
 		Grep("pipe"),
 		GrepNot("test"),
 		Parallel(4, hash),
-		Sort(Text(2)),
+		Sort(Textual(2)),
 	)
 
 	Print(
 		System("find", ".", "-type", "f", "-print"),
 		Parallel(4, hash),
-		Sort(Text(2)),
+		Sort(Textual(2)),
 	)
 }

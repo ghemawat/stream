@@ -1,55 +1,7 @@
-// TODO:
-//
-// Fork and merge filter sequences.
-// Trim (drops leading/trailing spaces)
-//
-// SplitRecordsAt(regexp)
-//	Joins lines and then splits at regexp.
-//	E.g., for blank line paras:
-//		SplitRecordsAt("\n\n")
-//	E.g., Go top level function boundaries:
-//		SplitRecordsBefore(`^func\s`)
-//	E.g., End at a closing brace/paren at start of line.
-//		SplitRecordsAfter(`^[})]\s*\n`)
-// Tentative operation:
-//   buf := ""
-//   k := 1024  // How much to accumulate before searching
-//   for each input item {
-//	add to buf
-//	if len(buf) >= k {
-//	  k = k*2  // Grow k to prevent quadratic regexp scanning cost
-//	  while buf matches regexp {
-//		split at/around regexp
-//		yield prefix
-//		buf = suffix
-//		k = len(prefix) * 2  // Shrink back down
-//	  }
-//	}
-//   }
-//   yield buf  // last record
-//
-// Column code treats quoted strings as one column.
-// Provide mechanisms to produce quoted columns.  Maybe:
-//	Sequence(filesrc, AddColumn(hasher, size))
-// Will produce:
-//	'file name with spaces' 0x234134414 1232213
-//
-// Another quoter: regexp plus list of numbers.
-//	Extract(`^(\d+)\s+(.*)$`, 2, 1)
-//
-// Find, ls, etc. produce quoted strings.
-//
-// Others:
-//	Split(re)
-//	SplitKeepEmpty(re)
-//
-// Also produce a way to remove quotes:
-//	Sequence(filesrc, AddColumn(size), Sort(Num(2)), Select(2, 1), Unquote)
-//
-// Does Print() automatically unquote?  No.
-//
-// Maybe represent data as a sequence of Value objects.  Preserve columns
-// internally.  Will it be too much mechanism and semantic surprises?
+// Package pipe provides filters that can be chained together in a manner
+// similar to Unix pipelines. Each filter is a function that takes as
+// input a sequence of strings (read from a channel) and produces as
+// output a sequence of strings (written to a channel).
 package pipe
 
 import (
@@ -66,13 +18,13 @@ import (
 	"unicode"
 )
 
-// Arg contains the data passed to a Filter. It mainly consists of
+// Arg contains the data passed to a Filter. The important parts are
 // a channel that produces the input to the filter, and a channel
 // that receives the output from the filter.  It may be extended
 // in the future to contain more fields.
 type Arg struct {
-	in  <-chan string
-	out chan<- string
+	In  <-chan string // In yields the sequence of items that are the input to a Filter.
+	Out chan<- string // Out consumes the sequence of items that are the output of a Filter.
 	// TODO: add an error channel here?
 }
 
@@ -81,8 +33,9 @@ type Arg struct {
 type Filter func(Arg)
 
 // ForEach() returns a channel that contains all output emitted by a
-// sequence of filters. The sequence of filters is fed an empty stream
-// as the input.
+// sequence of filters. The empty stream is fed as input to the first filter.
+// The output of each filter is fed as input to the next filter. The
+// output of the last filter is returned.
 func ForEach(filters ...Filter) <-chan string {
 	in := make(chan string, 0)
 	close(in)
@@ -92,20 +45,23 @@ func ForEach(filters ...Filter) <-chan string {
 }
 
 // Sequence returns a filter that is the concatenation of all filter arguments.
+// The output of a filter is fed as input to the next filter.
 func Sequence(filters ...Filter) Filter {
 	return func(arg Arg) {
-		in := arg.in
+		in := arg.In
 		for _, f := range filters {
 			c := make(chan string, 10000)
 			go runAndClose(f, Arg{in, c})
 			in = c
 		}
-		passThrough(Arg{in, arg.out})
+		passThrough(Arg{in, arg.Out})
 	}
 }
 
-// Print prints all output emitted by a sequence of filters. The
-// sequence of filters is fed an empty stream as the input.
+// Print() prints all items emitted by a sequence of filters, one per
+// line. The empty stream is fed as input to the first filter.  The
+// output of each filter is fed as input to the next filter. The
+// output of the last filter is printed.
 func Print(filters ...Filter) {
 	for s := range ForEach(filters...) {
 		fmt.Println(s)
@@ -114,22 +70,22 @@ func Print(filters ...Filter) {
 
 func runAndClose(f Filter, arg Arg) {
 	f(arg)
-	close(arg.out)
+	close(arg.Out)
 }
 
 // passThrough copies all items read from in to out.
 func passThrough(arg Arg) {
-	for s := range arg.in {
-		arg.out <- s
+	for s := range arg.In {
+		arg.Out <- s
 	}
 }
 
-// Echo copies its input and then emits item.
+// Echo copies its input and then emits items.
 func Echo(items ...string) Filter {
 	return func(arg Arg) {
 		passThrough(arg)
 		for _, s := range items {
-			arg.out <- s
+			arg.Out <- s
 		}
 	}
 }
@@ -139,31 +95,32 @@ func Numbers(x, y int) Filter {
 	return func(arg Arg) {
 		passThrough(arg)
 		for i := x; i <= y; i++ {
-			arg.out <- fmt.Sprintf("%d", i)
+			arg.Out <- fmt.Sprintf("%d", i)
 		}
 	}
 }
 
-// FindType is a mask that controls the types of nodes emitted by Find.
-type FindType int
+// FindMatch is a mask that controls the types of nodes emitted by Find.
+type FindMatch int
 
 const (
-	FILES    FindType = 1
-	DIRS     FindType = 2
-	SYMLINKS FindType = 4
-	ALL      FindType = FILES | DIRS | SYMLINKS
+	FILES    FindMatch = 1    // Match regular files
+	DIRS               = 2    // Match directories
+	SYMLINKS           = 4    // Match symbolic links
+	ALL                = 0xff // Match everything
 )
 
 // Find copies all input and then produces a sequence of items, one
-// per file/directory/symlink found at or under dir that matches t.
-func Find(t FindType, dir string) Filter {
+// per file/directory/symlink found at or under dir that matches mask.
+func Find(mask FindMatch, dir string) Filter {
 	return func(arg Arg) {
 		passThrough(arg)
 		filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
-			if t&FILES != 0 && s.Mode().IsRegular() ||
-				t&DIRS != 0 && s.Mode().IsDir() ||
-				t&SYMLINKS != 0 && s.Mode()&os.ModeSymlink != 0 {
-				arg.out <- f
+			if mask&ALL == ALL ||
+				mask&FILES != 0 && s.Mode().IsRegular() ||
+				mask&DIRS != 0 && s.Mode().IsDir() ||
+				mask&SYMLINKS != 0 && s.Mode()&os.ModeSymlink != 0 {
+				arg.Out <- f
 			}
 			return nil
 		})
@@ -182,7 +139,7 @@ func Cat(filenames ...string) Filter {
 			}
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
-				arg.out <- scanner.Text()
+				arg.Out <- scanner.Text()
 			}
 			file.Close()
 		}
@@ -192,6 +149,7 @@ func Cat(filenames ...string) Filter {
 // System executes "cmd args..." and produces one item per line in
 // the output of the command.
 func System(cmd string, args ...string) Filter {
+	// TODO: Also add xargs, unix command filter
 	return func(arg Arg) {
 		passThrough(arg)
 		out, err := exec.Command(cmd, args...).Output()
@@ -201,7 +159,7 @@ func System(cmd string, args ...string) Filter {
 		}
 		scanner := bufio.NewScanner(bytes.NewBuffer(out))
 		for scanner.Scan() {
-			arg.out <- scanner.Text()
+			arg.Out <- scanner.Text()
 		}
 	}
 }
@@ -209,9 +167,9 @@ func System(cmd string, args ...string) Filter {
 // If emits every input x for which fn(x) is true.
 func If(fn func(string) bool) Filter {
 	return func(arg Arg) {
-		for s := range arg.in {
+		for s := range arg.In {
 			if fn(s) {
-				arg.out <- s
+				arg.Out <- s
 			}
 		}
 	}
@@ -229,36 +187,40 @@ func GrepNot(r string) Filter {
 	return If(func(s string) bool { return !re.MatchString(s) })
 }
 
-// Uniq squashes adjacent identical items in in into a single output.
-func Uniq(arg Arg) {
-	first := true
-	last := ""
-	for s := range arg.in {
-		if first || last != s {
-			arg.out <- s
+// Uniq squashes adjacent identical items in arg.In into a single output.
+func Uniq() Filter {
+	return func(arg Arg) {
+		first := true
+		last := ""
+		for s := range arg.In {
+			if first || last != s {
+				arg.Out <- s
+			}
+			last = s
+			first = false
 		}
-		last = s
-		first = false
 	}
 }
 
-// UniqWithCount squashes adjacent identical items in in into a single
+// UniqWithCount squashes adjacent identical items in arg.In into a single
 // output prefixed with the count of identical items.
-func UniqWithCount(arg Arg) {
-	current := ""
-	count := 0
-	for s := range arg.in {
-		if s != current {
-			if count > 0 {
-				arg.out <- fmt.Sprintf("%d %s", count, current)
+func UniqWithCount() Filter {
+	return func(arg Arg) {
+		current := ""
+		count := 0
+		for s := range arg.In {
+			if s != current {
+				if count > 0 {
+					arg.Out <- fmt.Sprintf("%d %s", count, current)
+				}
+				count = 0
+				current = s
 			}
-			count = 0
-			current = s
+			count++
 		}
-		count++
-	}
-	if count > 0 {
-		arg.out <- fmt.Sprintf("%d %s", count, current)
+		if count > 0 {
+			arg.Out <- fmt.Sprintf("%d %s", count, current)
+		}
 	}
 }
 
@@ -273,8 +235,8 @@ func Parallel(n int, fn func(string, chan<- string)) Filter {
 		wg.Add(n)
 		for i := 0; i < n; i++ {
 			go func() {
-				for s := range arg.in {
-					fn(s, arg.out)
+				for s := range arg.In {
+					fn(s, arg.Out)
 				}
 				wg.Done()
 			}()
@@ -289,8 +251,8 @@ func Parallel(n int, fn func(string, chan<- string)) Filter {
 func ReplaceMatch(r, replacement string) Filter {
 	re := regexp.MustCompile(r)
 	return func(arg Arg) {
-		for s := range arg.in {
-			arg.out <- re.ReplaceAllString(s, replacement)
+		for s := range arg.In {
+			arg.Out <- re.ReplaceAllString(s, replacement)
 		}
 	}
 }
@@ -300,9 +262,9 @@ func DeleteMatch(r string) Filter {
 	return ReplaceMatch(r, "")
 }
 
-// Comparer is a function type that compares a and b and returns -1 if
-// a occurs before b, +1 if a occurs after b key, 0 otherwise.
-type Comparer func(a, b string) int
+// SortComparer is a function type that compares a and b and returns -1 if
+// a occurs before b, +1 if a occurs after b key, 0 otherwise.  See Sort.
+type SortComparer func(a, b string) int
 
 // column(s, n) returns 0,x where x is the nth column (1-based) in s,
 // or -1,"" if s does not have n columns.  A zero column number is
@@ -333,8 +295,11 @@ func column(s string, n int) (int, string) {
 	return -1, ""
 }
 
-// Text returns a Comparer that compares the nth column lexicographically.
-func Text(n int) Comparer {
+// Textual returns a SortComparer that compares the nth column
+// lexicographically.  A string that does not contain an nth column
+// sorts before all strings that contain an nth column.  If n == 0,
+// the entire string is treated as one column.
+func Textual(n int) SortComparer {
 	return func(a, b string) int {
 		a1, a2 := column(a, n)
 		b1, b2 := column(b, n)
@@ -352,8 +317,12 @@ func Text(n int) Comparer {
 	}
 }
 
-// Num returns a Comparer that compares the nth column numerically.
-func Num(n int) Comparer {
+// Numeric returns a SortComparer that compares the nth column numerically.
+// A string that does not contain an nth column sorts before all strings
+// that contain an nth column. If the nth column is not a number, it
+// sorts after all strings that contain an nth column that is a number.
+// If n == 0, the entire string is treated as one column.
+func Numeric(n int) SortComparer {
 	return func(a, b string) int {
 		a1, a2 := column(a, n)
 		b1, b2 := column(b, n)
@@ -387,17 +356,17 @@ func Num(n int) Comparer {
 	}
 }
 
-// Rev returns a Comparer that orders elements opposite of p.
-func Rev(p Comparer) Comparer {
+// Descending returns a SortComparer that orders elements opposite of p.
+func Descending(p SortComparer) SortComparer {
 	return func(a, b string) int {
 		return p(b, a)
 	}
 }
 
-// columns is an interface for  sorting by a sequence of Comparers.
+// columns is an interface for  sorting by a sequence of SortComparers.
 type columns struct {
 	Data []string
-	Cmp  []Comparer
+	Cmp  []SortComparer
 }
 
 func (c columns) Len() int      { return len(c.Data) }
@@ -415,27 +384,29 @@ func (c columns) Less(i, j int) bool {
 }
 
 // Sort sorts its inputs by the specified sequence of comparers.
-func Sort(comparers ...Comparer) Filter {
+func Sort(comparers ...SortComparer) Filter {
 	return func(arg Arg) {
 		cs := columns{Cmp: comparers}
-		for s := range arg.in {
+		for s := range arg.In {
 			cs.Data = append(cs.Data, s)
 		}
 		sort.Sort(cs)
 		for _, s := range cs.Data {
-			arg.out <- s
+			arg.Out <- s
 		}
 	}
 }
 
 // Reverse yields items in the reverse of the order it received them.
-func Reverse(arg Arg) {
-	var data []string
-	for s := range arg.in {
-		data = append(data, s)
-	}
-	for i := len(data) - 1; i >= 0; i-- {
-		arg.out <- data[i]
+func Reverse() Filter {
+	return func(arg Arg) {
+		var data []string
+		for s := range arg.In {
+			data = append(data, s)
+		}
+		for i := len(data) - 1; i >= 0; i-- {
+			arg.Out <- data[i]
+		}
 	}
 }
 
@@ -443,9 +414,9 @@ func Reverse(arg Arg) {
 func First(n int) Filter {
 	return func(arg Arg) {
 		emitted := 0
-		for s := range arg.in {
+		for s := range arg.In {
 			if emitted < n {
-				arg.out <- s
+				arg.Out <- s
 				emitted++
 			}
 		}
@@ -456,9 +427,9 @@ func First(n int) Filter {
 func DropFirst(n int) Filter {
 	return func(arg Arg) {
 		emitted := 0
-		for s := range arg.in {
+		for s := range arg.In {
 			if emitted >= n {
-				arg.out <- s
+				arg.Out <- s
 			}
 			emitted++
 		}
@@ -469,14 +440,14 @@ func DropFirst(n int) Filter {
 func Last(n int) Filter {
 	return func(arg Arg) {
 		var buf []string
-		for s := range arg.in {
+		for s := range arg.In {
 			buf = append(buf, s)
 			if len(buf) > n {
 				buf = buf[1:]
 			}
 		}
 		for _, s := range buf {
-			arg.out <- s
+			arg.Out <- s
 		}
 	}
 }
@@ -485,10 +456,10 @@ func Last(n int) Filter {
 func DropLast(n int) Filter {
 	return func(arg Arg) {
 		var buf []string
-		for s := range arg.in {
+		for s := range arg.In {
 			buf = append(buf, s)
 			if len(buf) > n {
-				arg.out <- buf[0]
+				arg.Out <- buf[0]
 				buf = buf[1:]
 			}
 		}
@@ -497,18 +468,20 @@ func DropLast(n int) Filter {
 
 // NumberLines prefixes its item with its index in the input sequence
 // (starting at 1).
-func NumberLines(arg Arg) {
-	line := 1
-	for s := range arg.in {
-		arg.out <- fmt.Sprintf("%5d %s", line, s)
-		line++
+func NumberLines() Filter {
+	return func(arg Arg) {
+		line := 1
+		for s := range arg.In {
+			arg.Out <- fmt.Sprintf("%5d %s", line, s)
+			line++
+		}
 	}
 }
 
 // Cut emits just the bytes indexed [start..end] of each input item.
 func Cut(start, end int) Filter {
 	return func(arg Arg) {
-		for s := range arg.in {
+		for s := range arg.In {
 			if len(s) > end {
 				s = s[:end+1]
 			}
@@ -517,7 +490,7 @@ func Cut(start, end int) Filter {
 			} else {
 				s = s[start:]
 			}
-			arg.out <- s
+			arg.Out <- s
 		}
 	}
 }
@@ -528,7 +501,7 @@ func Cut(start, end int) Filter {
 // full string.
 func Select(columns ...int) Filter {
 	return func(arg Arg) {
-		for s := range arg.in {
+		for s := range arg.In {
 			result := ""
 			for _, col := range columns {
 				if e, c := column(s, col); e == 0 && c != "" {
@@ -538,7 +511,7 @@ func Select(columns ...int) Filter {
 					result = result + c
 				}
 			}
-			arg.out <- result
+			arg.Out <- result
 		}
 	}
 }

@@ -143,23 +143,13 @@ func ExampleParallel() {
 	// 3
 }
 
-func ExampleReplaceMatch() {
-	Print(Numbers(1, 5), ReplaceMatch("(3)", "$1$1"))
+func ExampleSubstitute() {
+	Print(Numbers(1, 5), Substitute("(3)", "$1$1"))
 	// Output:
 	// 1
 	// 2
 	// 33
 	// 4
-	// 5
-}
-
-func ExampleDeleteMatch() {
-	Print(Numbers(1, 5), DeleteMatch("[24]"))
-	// Output:
-	// 1
-	//
-	// 3
-	//
 	// 5
 }
 
@@ -369,11 +359,11 @@ func ExampleMix() {
 		GrepNot("7"),
 		dbl,
 		Uniq(),
-		ReplaceMatch("^(.)$", "x$1"),
+		Substitute("^(.)$", "x$1"),
 		Sort(),
-		ReplaceMatch("^(.)", "$1 "),
+		Substitute("^(.)", "$1 "),
 		dbl,
-		DeleteMatch(" .$"),
+		Substitute(" .$", ""),
 		UniqWithCount(),
 		Sort(Numeric(1)),
 		Reverse(),

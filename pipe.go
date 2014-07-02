@@ -245,21 +245,16 @@ func Parallel(n int, fn func(string, chan<- string)) Filter {
 	}
 }
 
-// ReplaceMatch all occurrences of the regular expression r in an input item
-// with replacement.  The replacement string can contain $1, $2, etc. which
-// represent submatches of r.
-func ReplaceMatch(r, replacement string) Filter {
+// Substitute replaces all occurrences of the regular expression r in
+// an input item with replacement.  The replacement string can contain
+// $1, $2, etc. which represent submatches of r.
+func Substitute(r, replacement string) Filter {
 	re := regexp.MustCompile(r)
 	return func(arg Arg) {
 		for s := range arg.In {
 			arg.Out <- re.ReplaceAllString(s, replacement)
 		}
 	}
-}
-
-// DeleteMatch deletes all occurrences of r in an input item.
-func DeleteMatch(r string) Filter {
-	return ReplaceMatch(r, "")
 }
 
 // SortComparer is a function type that compares a and b and returns -1 if

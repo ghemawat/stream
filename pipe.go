@@ -39,6 +39,16 @@ func ForEach(filters ...Filter) <-chan string {
 	return out
 }
 
+// Print() prints all items emitted by a sequence of filters, one per
+// line. The empty stream is fed as input to the first filter.  The
+// output of each filter is fed as input to the next filter. The
+// output of the last filter is printed.
+func Print(filters ...Filter) {
+	for s := range ForEach(filters...) {
+		fmt.Println(s)
+	}
+}
+
 // Sequence returns a filter that is the concatenation of all filter arguments.
 // The output of a filter is fed as input to the next filter.
 func Sequence(filters ...Filter) Filter {
@@ -50,16 +60,6 @@ func Sequence(filters ...Filter) Filter {
 			in = c
 		}
 		passThrough(Arg{in, arg.Out})
-	}
-}
-
-// Print() prints all items emitted by a sequence of filters, one per
-// line. The empty stream is fed as input to the first filter.  The
-// output of each filter is fed as input to the next filter. The
-// output of the last filter is printed.
-func Print(filters ...Filter) {
-	for s := range ForEach(filters...) {
-		fmt.Println(s)
 	}
 }
 

@@ -246,21 +246,18 @@ func Parallel(n int, fn func(string, chan<- string)) Filter {
 }
 
 type parItem struct {
-	index int
-	value string
-	ok    bool
+	index     int
+	value     string
+	has_value bool
 }
 
-func P2(n int, fn func(string) (string, bool)) Filter {
+// MapConcurrent calls fn(x) for every item x in a pool of n
+// goroutines and yields the outputs of the fn calls. The output order
+// matches the input order.
+func MapConcurrent(n int, fn func(string) (string, bool)) Filter {
 	return func(arg Arg) {
-		// We decompose into n+2 routines: one producer, n processors,
-		// one consumer. Producer is connected to processors by
-		// source. Processors are connected to consumer by sink.
+		// Attach a sequence number to each item.
 		source := make(chan parItem, 10000)
-		sink := make(chan parItem, 10000)
-
-		// The producer converts a sequence of strings into
-		// a parItem that associates an index with each string.
 		go func() {
 			i := 0
 			for s := range arg.In {
@@ -270,45 +267,41 @@ func P2(n int, fn func(string) (string, bool)) Filter {
 			close(source)
 		}()
 
-		// The processors accept parItems, apply fn, and send
-		// parItems to the sink.
+		// We keep track of outputs in a map indexed by the
+		// sequence number of the item.  These items are
+		// yielded in order.
+		var mu sync.Mutex
+		buffered := make(map[int]parItem)
+		next := 0
+
+		// Process the items in n go routines.
+		wg := &sync.WaitGroup{}
+		wg.Add(n)
 		for i := 0; i < n; i++ {
 			go func() {
 				for item := range source {
-					s, ok := fn(item.value)
-					sink <- parItem{item.index, s, ok}
+					s, has_value := fn(item.value)
+
+					// Record item and yield in order
+					mu.Lock()
+					buffered[item.index] = parItem{item.index, s, has_value}
+					for {
+						x, ok := buffered[next]
+						if !ok {
+							break
+						}
+						if x.has_value {
+							arg.Out <- x.value
+						}
+						delete(buffered, next)
+						next++
+					}
+					mu.Unlock()
 				}
-				// Send a "done" item
-				sink <- parItem{-1, "", false}
+				wg.Done()
 			}()
 		}
-
-		// The consumer reads parItems from sink and sends them
-		// in order to arg.Out.
-		done := 0
-		next := 0
-		buffered := make(map[int]parItem)
-		for item := range sink {
-			if item.index < 0 {
-				done++
-				if done == n {
-					break
-				}
-				continue
-			}
-			buffered[item.index] = item
-			for {
-				x, ok := buffered[next]
-				if !ok {
-					break
-				}
-				if x.ok {
-					arg.Out <- x.value
-				}
-				delete(buffered, next)
-				next++
-			}
-		}
+		wg.Wait()
 	}
 }
 

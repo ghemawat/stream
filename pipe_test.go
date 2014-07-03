@@ -144,10 +144,10 @@ func ExampleParallel() {
 	// 3
 }
 
-func ExampleParallel2() {
+func ExampleMapConcurrent() {
 	Print(
 		Echo("hello", "there", "how", "are", "you?"),
-		P2(4, func(s string) (string, bool) {
+		MapConcurrent(4, func(s string) (string, bool) {
 			time.Sleep(100 * time.Duration(len(s)) * time.Millisecond)
 			if len(s) == 4 {
 				return "", false

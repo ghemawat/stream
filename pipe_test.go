@@ -132,18 +132,6 @@ func ExampleUniqWithCount() {
 	// 2 b
 }
 
-func ExampleParallel() {
-	Print(
-		Numbers(1, 3),
-		Parallel(2, func(s string, out chan<- string) { out <- s }),
-		Sort(), // Restore any re-ordering caused by Parallel
-	)
-	// Output:
-	// 1
-	// 2
-	// 3
-}
-
 func ExampleParallelMap() {
 	Print(
 		Echo("hello", "there", "how", "are", "you?"),
@@ -406,20 +394,18 @@ func ExampleMix() {
 }
 
 func ExampleHash() {
-	hash := func(f string, out chan<- string) {
+	hash := func(f string) string {
 		file, err := os.Open(f)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
+			return "ERROR"
 		}
 		hasher := sha1.New()
 		_, err = io.Copy(hasher, file)
 		file.Close()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
+			return "ERROR"
 		}
-		out <- fmt.Sprintf("%x %s", hasher.Sum(nil), f)
+		return fmt.Sprintf("%x %s", hasher.Sum(nil), f)
 	}
 
 	// Some alternative ways of hashing.
@@ -427,13 +413,14 @@ func ExampleHash() {
 		Find(FILES, "."),
 		Grep("pipe"),
 		GrepNot("test"),
-		Parallel(4, hash),
+		ParallelMap(4, hash),
 		Sort(Textual(2)),
 	)
 
 	Print(
 		System("find", ".", "-type", "f", "-print"),
-		Parallel(4, hash),
+		GrepNot("git"),
+		ParallelMap(4, hash),
 		Sort(Textual(2)),
 	)
 }

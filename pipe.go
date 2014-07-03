@@ -224,27 +224,6 @@ func UniqWithCount() Filter {
 	}
 }
 
-// Parallel calls fn(x, out) for every item x in a pool of n goroutines.
-func Parallel(n int, fn func(string, chan<- string)) Filter {
-	// TODO: Maintain input order?
-	// (a) Input goroutine generates <index, str> pairs
-	// (b) n appliers read pairs and produce <index, fn(str)> pairs
-	// (c) Output goroutine reads and emits in order
-	return func(arg Arg) {
-		wg := &sync.WaitGroup{}
-		wg.Add(n)
-		for i := 0; i < n; i++ {
-			go func() {
-				for s := range arg.In {
-					fn(s, arg.Out)
-				}
-				wg.Done()
-			}()
-		}
-		wg.Wait()
-	}
-}
-
 type parItem struct {
 	index int
 	value string

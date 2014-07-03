@@ -308,10 +308,15 @@ func ExampleDropFirst() {
 }
 
 func ExampleDropLast() {
-	Print(Numbers(1, 10), DropLast(8))
+	Print(Numbers(1, 10), DropLast(3))
 	// Output:
 	// 1
 	// 2
+	// 3
+	// 4
+	// 5
+	// 6
+	// 7
 }
 
 func ExampleNumberLines() {

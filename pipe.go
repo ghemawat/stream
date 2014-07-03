@@ -250,6 +250,11 @@ type parItem struct {
 	value string
 }
 
+func contains(m map[int]string, x int) bool {
+	_, ok := m[x]
+	return ok
+}
+
 // ParallelMap calls fn(x) for every item x in a pool of n
 // goroutines and yields the outputs of the fn calls. The output order
 // matches the input order.
@@ -270,26 +275,21 @@ func ParallelMap(n int, fn func(string) string) Filter {
 		// sequence number of the item.  These items are
 		// yielded in order.
 		var mu sync.Mutex
-		buffered := make(map[int]parItem)
+		buffered := make(map[int]string)
 		next := 0
 
 		// Process the items in n go routines.
-		wg := &sync.WaitGroup{}
+		var wg sync.WaitGroup
 		wg.Add(n)
 		for i := 0; i < n; i++ {
 			go func() {
 				for item := range source {
 					s := fn(item.value)
-
-					// Record item and yield in order
 					mu.Lock()
-					buffered[item.index] = parItem{item.index, s}
-					for {
-						x, ok := buffered[next]
-						if !ok {
-							break
-						}
-						arg.Out <- x.value
+					buffered[item.index] = s
+					for contains(buffered, next) {
+						// next item is ready
+						arg.Out <- buffered[next]
 						delete(buffered, next)
 						next++
 					}

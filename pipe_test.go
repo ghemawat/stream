@@ -12,7 +12,7 @@ import (
 func Example() {
 	Print(
 		Find(FILES, "."),
-		Grep(`\.go$`),
+		Grep(`pipe.*\.go$`),
 		NumberLines(),
 	)
 	// Output:

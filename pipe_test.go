@@ -137,12 +137,11 @@ func ExampleUniqWithCount() {
 	Print(
 		Echo("a", "b", "b", "c"),
 		UniqWithCount(),
-		Sort(Numeric(1)),
 	)
 	// Output:
 	// 1 a
-	// 1 c
 	// 2 b
+	// 1 c
 }
 
 func ExampleParallelMap() {

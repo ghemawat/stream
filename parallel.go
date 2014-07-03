@@ -37,6 +37,7 @@ func ParallelMap(n int, fn func(string) string) Filter {
 				delete(buffered, next)
 				next++
 			}
+			// Should we wait here to limit size of buffered?
 			return ok
 		}
 

@@ -1,10 +1,7 @@
 package pipe
 
 import (
-	"crypto/sha1"
 	"fmt"
-	"io"
-	"os"
 	_ "testing"
 	"time"
 )
@@ -128,11 +125,12 @@ func ExampleGrepNot() {
 }
 
 func ExampleUniq() {
-	Print(Echo("a", "b", "b", "c"), Uniq())
+	Print(Echo("a", "b", "b", "c", "b"), Uniq())
 	// Output:
 	// a
 	// b
 	// c
+	// b
 }
 
 func ExampleUniqWithCount() {
@@ -406,36 +404,4 @@ func ExampleMix() {
 	// 2 4
 	// 2 2
 	// 2 1
-}
-
-func ExampleHash() {
-	hash := func(f string) string {
-		file, err := os.Open(f)
-		if err != nil {
-			return "ERROR"
-		}
-		hasher := sha1.New()
-		_, err = io.Copy(hasher, file)
-		file.Close()
-		if err != nil {
-			return "ERROR"
-		}
-		return fmt.Sprintf("%x %s", hasher.Sum(nil), f)
-	}
-
-	// Some alternative ways of hashing.
-	Print(
-		Find(FILES, "."),
-		Grep("pipe"),
-		GrepNot("test"),
-		ParallelMap(4, hash),
-		Sort(Textual(2)),
-	)
-
-	Print(
-		System("find", ".", "-type", "f", "-print"),
-		GrepNot("git"),
-		ParallelMap(4, hash),
-		Sort(Textual(2)),
-	)
 }

@@ -25,14 +25,18 @@ func ParallelMap(n int, fn func(string) string) Filter {
 			close(source)
 		}()
 
-		// We keep track of outputs in a map indexed by the
-		// sequence number of the item.  These items are
-		// yielded in order.
+		// We keep track of outputs in a map indexed by the item number.
+		// These items are yielded in order.
 		var mu sync.Mutex
 		buffered := make(map[int]string)
 		next := 0
-		nextItemReady := func() bool {
-			_, ok := buffered[next]
+		processReadyItem := func() bool {
+			x, ok := buffered[next]
+			if ok {
+				arg.Out <- x
+				delete(buffered, next)
+				next++
+			}
 			return ok
 		}
 
@@ -45,10 +49,7 @@ func ParallelMap(n int, fn func(string) string) Filter {
 					s := fn(item.value)
 					mu.Lock()
 					buffered[item.index] = s
-					for nextItemReady() {
-						arg.Out <- buffered[next]
-						delete(buffered, next)
-						next++
+					for processReadyItem() {
 					}
 					mu.Unlock()
 				}

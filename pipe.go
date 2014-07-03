@@ -245,6 +245,73 @@ func Parallel(n int, fn func(string, chan<- string)) Filter {
 	}
 }
 
+type parItem struct {
+	index int
+	value string
+	ok    bool
+}
+
+func P2(n int, fn func(string) (string, bool)) Filter {
+	return func(arg Arg) {
+		// We decompose into n+2 routines: one producer, n processors,
+		// one consumer. Producer is connected to processors by
+		// source. Processors are connected to consumer by sink.
+		source := make(chan parItem, 10000)
+		sink := make(chan parItem, 10000)
+
+		// The producer converts a sequence of strings into
+		// a parItem that associates an index with each string.
+		go func() {
+			i := 0
+			for s := range arg.In {
+				source <- parItem{i, s, true}
+				i++
+			}
+			close(source)
+		}()
+
+		// The processors accept parItems, apply fn, and send
+		// parItems to the sink.
+		for i := 0; i < n; i++ {
+			go func() {
+				for item := range source {
+					s, ok := fn(item.value)
+					sink <- parItem{item.index, s, ok}
+				}
+				// Send a "done" item
+				sink <- parItem{-1, "", false}
+			}()
+		}
+
+		// The consumer reads parItems from sink and sends them
+		// in order to arg.Out.
+		done := 0
+		next := 0
+		buffered := make(map[int]parItem)
+		for item := range sink {
+			if item.index < 0 {
+				done++
+				if done == n {
+					break
+				}
+				continue
+			}
+			buffered[item.index] = item
+			for {
+				x, ok := buffered[next]
+				if !ok {
+					break
+				}
+				if x.ok {
+					arg.Out <- x.value
+				}
+				delete(buffered, next)
+				next++
+			}
+		}
+	}
+}
+
 // Substitute replaces all occurrences of the regular expression r in
 // an input item with replacement.  The replacement string can contain
 // $1, $2, etc. which represent submatches of r.

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	_ "testing"
+	"time"
 )
 
 func Example() {
@@ -141,6 +142,24 @@ func ExampleParallel() {
 	// 1
 	// 2
 	// 3
+}
+
+func ExampleParallel2() {
+	Print(
+		Echo("hello", "there", "how", "are", "you?"),
+		P2(4, func(s string) (string, bool) {
+			time.Sleep(100 * time.Duration(len(s)) * time.Millisecond)
+			if len(s) == 4 {
+				return "", false
+			}
+			return fmt.Sprintf("%d %s", len(s), s), true
+		}),
+	)
+	// Output:
+	// 5 hello
+	// 5 there
+	// 3 how
+	// 3 are
 }
 
 func ExampleSubstitute() {

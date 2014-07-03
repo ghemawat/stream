@@ -147,12 +147,9 @@ func ExampleParallel() {
 func ExampleMapConcurrent() {
 	Print(
 		Echo("hello", "there", "how", "are", "you?"),
-		MapConcurrent(4, func(s string) (string, bool) {
+		MapConcurrent(4, func(s string) string {
 			time.Sleep(100 * time.Duration(len(s)) * time.Millisecond)
-			if len(s) == 4 {
-				return "", false
-			}
-			return fmt.Sprintf("%d %s", len(s), s), true
+			return fmt.Sprintf("%d %s", len(s), s)
 		}),
 	)
 	// Output:
@@ -160,6 +157,7 @@ func ExampleMapConcurrent() {
 	// 5 there
 	// 3 how
 	// 3 are
+	// 4 you?
 }
 
 func ExampleSubstitute() {

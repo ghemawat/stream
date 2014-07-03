@@ -144,10 +144,12 @@ func ExampleParallel() {
 	// 3
 }
 
-func ExampleMapConcurrent() {
+func ExampleParallelMap() {
 	Print(
 		Echo("hello", "there", "how", "are", "you?"),
-		MapConcurrent(4, func(s string) string {
+		ParallelMap(4, func(s string) string {
+			// Sleep some amount to ensure that ParalellMap
+			// implementation handles out of order results.
 			time.Sleep(100 * time.Duration(len(s)) * time.Millisecond)
 			return fmt.Sprintf("%d %s", len(s), s)
 		}),

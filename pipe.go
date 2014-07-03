@@ -250,10 +250,10 @@ type parItem struct {
 	value string
 }
 
-// MapConcurrent calls fn(x) for every item x in a pool of n
+// ParallelMap calls fn(x) for every item x in a pool of n
 // goroutines and yields the outputs of the fn calls. The output order
 // matches the input order.
-func MapConcurrent(n int, fn func(string) string) Filter {
+func ParallelMap(n int, fn func(string) string) Filter {
 	return func(arg Arg) {
 		// Attach a sequence number to each item.
 		source := make(chan parItem, 10000)

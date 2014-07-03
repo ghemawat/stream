@@ -132,6 +132,15 @@ func System(cmd string, args ...string) Filter {
 	}
 }
 
+// Map calls fn(x) for every item x and yields the outputs of the fn calls.
+func Map(fn func(string) string) Filter {
+	return func(arg Arg) {
+		for s := range arg.In {
+			arg.Out <- fn(s)
+		}
+	}
+}
+
 // If emits every input x for which fn(x) is true.
 func If(fn func(string) bool) Filter {
 	return func(arg Arg) {

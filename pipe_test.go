@@ -88,6 +88,21 @@ func ExampleNumbers() {
 	// 5
 }
 
+func ExampleMap() {
+	Print(
+		Echo("hello", "there", "how", "are", "you?"),
+		Map(func(s string) string {
+			return fmt.Sprintf("%d %s", len(s), s)
+		}),
+	)
+	// Output:
+	// 5 hello
+	// 5 there
+	// 3 how
+	// 3 are
+	// 4 you?
+}
+
 func ExampleIf() {
 	Print(Numbers(1, 12), If(func(s string) bool { return len(s) > 1 }))
 	// Output:

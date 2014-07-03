@@ -315,7 +315,7 @@ func Substitute(r, replacement string) Filter {
 }
 
 // SortComparer is a function type that compares a and b and returns -1 if
-// a occurs before b, +1 if a occurs after b key, 0 otherwise.  See Sort.
+// a occurs before b, +1 if a occurs after b, 0 otherwise.  See Sort.
 type SortComparer func(a, b string) int
 
 // column(s, n) returns 0,x where x is the nth column (1-based) in s,

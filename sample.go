@@ -37,7 +37,7 @@ func Sample(n int) Filter {
 			i++
 			hash := sha1.Sum([]byte(fmt.Sprintf("%d %s", i, s)))
 			heap.Push(h, sample{fmt.Sprintf("%x", hash), s})
-			for len(*h) > n {
+			if len(*h) > n {
 				heap.Pop(h)
 			}
 		}

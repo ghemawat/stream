@@ -369,38 +369,3 @@ func ExampleSystem() {
 	// ./pipe.go
 	// ./pipe_test.go
 }
-
-func ExampleMix() {
-	dbl := func(arg Arg) {
-		for s := range arg.In {
-			arg.Out <- s
-			arg.Out <- s
-		}
-	}
-
-	Print(Numbers(1, 100),
-		Grep("3"),
-		GrepNot("7"),
-		dbl,
-		Uniq(),
-		Substitute("^(.)$", "x$1"),
-		Sort(),
-		Substitute("^(.)", "$1 "),
-		dbl,
-		Substitute(" .$", ""),
-		UniqWithCount(),
-		Sort(Numeric(1)),
-		Reverse(),
-	)
-
-	// Output:
-	// 18 3
-	// 2 x
-	// 2 9
-	// 2 8
-	// 2 6
-	// 2 5
-	// 2 4
-	// 2 2
-	// 2 1
-}

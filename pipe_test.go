@@ -285,6 +285,19 @@ func ExampleReverse() {
 	// a
 }
 
+func ExampleSample() {
+	Print(
+		Numbers(100, 200),
+		Sample(4),
+		Sort(),
+	)
+	// Output:
+	// 122
+	// 150
+	// 154
+	// 158
+}
+
 func ExampleFirst() {
 	Print(Numbers(1, 10), First(3))
 	// Output:

@@ -24,7 +24,7 @@ func (h *samples) Pop() interface{} {
 	return x
 }
 
-// Sample picks n pseudo-randomly chosen input items.  The picking is
+// Sample picks n pseudo-randomly chosen input items.  The sampling is
 // deterministic.
 func Sample(n int) Filter {
 	return func(arg Arg) {

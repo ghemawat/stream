@@ -350,7 +350,7 @@ func ExampleCut() {
 }
 
 func ExmapleSelect() {
-	Print(Echo("hello world"), Select(2, 0, 1))
+	Print(Echo("hello world"), Select(2, 3, 0, 1))
 	// Output:
 	// world hello world hello
 }

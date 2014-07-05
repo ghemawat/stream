@@ -330,7 +330,7 @@ func Select(columns ...int) Filter {
 		for s := range arg.In {
 			result := ""
 			for _, col := range columns {
-				if e, c := column(s, col); e == 0 && c != "" {
+				if _, c := column(s, col); c != "" {
 					if result != "" {
 						result = result + " "
 					}

@@ -2,6 +2,15 @@
 // similar to Unix pipelines. Each filter is a function that takes as
 // input a sequence of strings (read from a channel) and produces as
 // output a sequence of strings (written to a channel).
+//
+// When filters are chained together (via the Sequence function), the
+// output of one filter is fed as input to the next filter.  The empty
+// input is passed to the first filter. The output of the last filter
+// is returned to the caller.
+//
+// A filter can report errors by calling Arg.ReportError.  These errors
+// are saved away and returned to the caller once the filters have
+// finished execution.
 package pipe
 
 import (

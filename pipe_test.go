@@ -7,14 +7,16 @@ import (
 )
 
 func Example() {
-	Print(
+	err := Print(
 		Find(FILES, "."),
 		Grep(`pipe.*\.go$`),
 		NumberLines(),
 	)
+	fmt.Println("error:", err)
 	// Output:
 	//     1 pipe.go
 	//     2 pipe_test.go
+	// error: <nil>
 }
 
 func ExampleEmpty() {
@@ -40,17 +42,17 @@ func ExampleSequence_empty() {
 	// Output:
 }
 
-func ExampleSequence_multi() {
+func ExampleSequence_one() {
+	Print(Sequence(Echo("1 of 1")))
+	// Output:
+	// 1 of 1
+}
+
+func ExampleSequence_two() {
 	Print(Sequence(Echo("1 of 2"), Echo("2 of 2")))
 	// Output:
 	// 1 of 2
 	// 2 of 2
-}
-
-func ExampleSequence_single() {
-	Print(Sequence(Echo("1 of 1")))
-	// Output:
-	// 1 of 1
 }
 
 func ExampleForEach() {

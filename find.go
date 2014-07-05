@@ -21,13 +21,16 @@ func Find(mask FindMatch, dir string) Filter {
 	return func(arg Arg) {
 		passThrough(arg)
 		err := filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
+			if e != nil {
+				return e
+			}
 			if mask&ALL == ALL ||
 				mask&FILES != 0 && s.Mode().IsRegular() ||
 				mask&DIRS != 0 && s.Mode().IsDir() ||
 				mask&SYMLINKS != 0 && s.Mode()&os.ModeSymlink != 0 {
 				arg.Out <- f
 			}
-			return e
+			return nil
 		})
 		if err != nil {
 			arg.ReportError(err)

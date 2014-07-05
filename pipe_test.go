@@ -371,9 +371,9 @@ func ExampleCat() {
 	// func ExampleCat() {
 }
 
-func ExampleSystem() {
+func ExampleCommandOutput() {
 	Print(
-		System("find", ".", "-type", "f", "-print"),
+		CommandOutput("find", ".", "-type", "f", "-print"),
 		Grep(`^\./pipe.*\.go$`),
 		Sort(),
 	)

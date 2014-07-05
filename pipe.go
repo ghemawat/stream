@@ -7,6 +7,7 @@ package pipe
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 )
@@ -73,6 +74,13 @@ func passThrough(arg Arg) {
 	}
 }
 
+func splitIntoLines(rd io.Reader, arg Arg) {
+	scanner := bufio.NewScanner(rd)
+	for scanner.Scan() {
+		arg.Out <- scanner.Text()
+	}
+}
+
 // Echo copies its input and then emits items.
 func Echo(items ...string) Filter {
 	return func(arg Arg) {
@@ -103,10 +111,7 @@ func Cat(filenames ...string) Filter {
 				fmt.Fprintln(os.Stderr, err)
 				continue
 			}
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				arg.Out <- scanner.Text()
-			}
+			splitIntoLines(file, arg)
 			file.Close()
 		}
 	}

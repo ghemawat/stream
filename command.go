@@ -1,7 +1,6 @@
 package pipe
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -19,9 +18,6 @@ func CommandOutput(cmd string, args ...string) Filter {
 			fmt.Fprintln(os.Stderr, err)
 			return
 		}
-		scanner := bufio.NewScanner(bytes.NewBuffer(out))
-		for scanner.Scan() {
-			arg.Out <- scanner.Text()
-		}
+		splitIntoLines(bytes.NewBuffer(out), arg)
 	}
 }

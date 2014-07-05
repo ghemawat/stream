@@ -1,7 +1,6 @@
 package pipe
 
 import (
-	"bytes"
 	"os/exec"
 )
 
@@ -11,11 +10,17 @@ func CommandOutput(cmd string, args ...string) Filter {
 	// TODO: Also add xargs, unix command filter
 	return func(arg Arg) {
 		passThrough(arg)
-		out, err := exec.Command(cmd, args...).Output()
+		cmd := exec.Command(cmd, args...)
+		output, err := cmd.StdoutPipe()
+		if err == nil {
+			err = cmd.Start()
+		}
+		if err == nil {
+			splitIntoLines(output, arg)
+			err = cmd.Wait()
+		}
 		if err != nil {
 			reportError(err)
-		} else {
-			splitIntoLines(bytes.NewBuffer(out), arg)
 		}
 	}
 }

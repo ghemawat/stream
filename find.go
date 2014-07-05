@@ -27,7 +27,7 @@ func Find(mask FindMatch, dir string) Filter {
 				mask&SYMLINKS != 0 && s.Mode()&os.ModeSymlink != 0 {
 				arg.Out <- f
 			}
-			return nil
+			return e
 		})
 		if err != nil {
 			arg.ReportError(err)

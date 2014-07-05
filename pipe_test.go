@@ -368,6 +368,13 @@ func ExampleFind_dirs() {
 	// .
 }
 
+func ExampleFind_error() {
+	if ForEach(Find(ALL, "/no_such_dir"), func(string) {}) == nil {
+		fmt.Println("Find did not return expected error")
+	}
+	// Output:
+}
+
 func ExampleCat() {
 	Print(Cat("pipe_test.go"), Grep("^func ExampleCat"))
 	// Output:
@@ -387,9 +394,8 @@ func ExampleCommandOutput() {
 }
 
 func ExampleCommandOutput_error() {
-	err := ForEach(CommandOutput("no_such_command"), func(string) {})
-	if err == nil {
-		fmt.Println("command succeeded unexpectedly")
+	if ForEach(CommandOutput("no_such_command"), func(string) {}) == nil {
+		fmt.Println("execution of missing command succeeded unexpectedly")
 	}
 	// Output:
 }

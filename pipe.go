@@ -81,6 +81,10 @@ func splitIntoLines(rd io.Reader, arg Arg) {
 	}
 }
 
+func reportError(err error) {
+	fmt.Fprintln(os.Stderr, err)
+}
+
 // Echo copies its input and then emits items.
 func Echo(items ...string) Filter {
 	return func(arg Arg) {
@@ -108,7 +112,7 @@ func Cat(filenames ...string) Filter {
 		for _, f := range filenames {
 			file, err := os.Open(f)
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				reportError(err)
 				continue
 			}
 			splitIntoLines(file, arg)

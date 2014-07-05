@@ -2,8 +2,6 @@ package pipe
 
 import (
 	"bytes"
-	"fmt"
-	"os"
 	"os/exec"
 )
 
@@ -15,9 +13,9 @@ func CommandOutput(cmd string, args ...string) Filter {
 		passThrough(arg)
 		out, err := exec.Command(cmd, args...).Output()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
+			reportError(err)
+		} else {
+			splitIntoLines(bytes.NewBuffer(out), arg)
 		}
-		splitIntoLines(bytes.NewBuffer(out), arg)
 	}
 }

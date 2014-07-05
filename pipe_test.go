@@ -150,7 +150,7 @@ func ExampleParallelMap() {
 		ParallelMap(4, func(s string) string {
 			// Sleep some amount to ensure that ParalellMap
 			// implementation handles out of order results.
-			time.Sleep(100 * time.Duration(len(s)) * time.Millisecond)
+			time.Sleep(10 * time.Duration(len(s)) * time.Millisecond)
 			return fmt.Sprintf("%d %s", len(s), s)
 		}),
 	)

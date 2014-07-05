@@ -20,7 +20,7 @@ const (
 func Find(mask FindMatch, dir string) Filter {
 	return func(arg Arg) {
 		passThrough(arg)
-		filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
+		err := filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
 			if mask&ALL == ALL ||
 				mask&FILES != 0 && s.Mode().IsRegular() ||
 				mask&DIRS != 0 && s.Mode().IsDir() ||
@@ -29,5 +29,8 @@ func Find(mask FindMatch, dir string) Filter {
 			}
 			return nil
 		})
+		if err != nil {
+			arg.ReportError(err)
+		}
 	}
 }

@@ -20,7 +20,7 @@ func CommandOutput(cmd string, args ...string) Filter {
 			err = cmd.Wait()
 		}
 		if err != nil {
-			reportError(err)
+			arg.ReportError(err)
 		}
 	}
 }

@@ -54,11 +54,14 @@ func ExampleSequence_single() {
 }
 
 func ExampleForEach() {
-	for s := range ForEach(Numbers(1, 10), First(3)) {
+	err := ForEach(Numbers(1, 5), func(s string) {
 		fmt.Print(s)
+	})
+	if err != nil {
+		panic(err)
 	}
 	// Output:
-	// 123
+	// 12345
 }
 
 func ExamplePrint() {
@@ -381,4 +384,12 @@ func ExampleCommandOutput() {
 	// Output:
 	// ./pipe.go
 	// ./pipe_test.go
+}
+
+func ExampleCommandOutput_error() {
+	err := ForEach(CommandOutput("no_such_command"), func(string) {})
+	if err == nil {
+		fmt.Println("command succeeded unexpectedly")
+	}
+	// Output:
 }

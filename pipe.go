@@ -10,42 +10,70 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"sync"
 )
+
+// filterErrors records errors accumulated during the execution of a filter.
+type filterErrors struct {
+	mu     sync.Mutex
+	errors []error
+}
 
 // Arg contains the data passed to a Filter. The important parts are
 // a channel that produces the input to the filter, and a channel
 // that receives the output from the filter.  It may be extended
 // in the future to contain more fields.
 type Arg struct {
-	In  <-chan string // In yields the sequence of items that are the input to a Filter.
-	Out chan<- string // Out consumes the sequence of items that are the output of a Filter.
-	// TODO: add an error channel here?
+	In     <-chan string // In yields the sequence of items that are the input to a Filter.
+	Out    chan<- string // Out consumes the sequence of items that are the output of a Filter.
+	errors *filterErrors
+}
+
+// ReportError records an error encountered during an execution of a filter.
+// This error will be reported by whatever facility (e.g., Filter, or Print)
+// was being used to execute the filters.
+func (a *Arg) ReportError(err error) {
+	a.errors.mu.Lock()
+	defer a.errors.mu.Unlock()
+	a.errors.errors = append(a.errors.errors, err)
 }
 
 // Filter reads a sequence of strings from a channel and produces a
 // sequence on another channel.
 type Filter func(Arg)
 
-// ForEach() returns a channel that contains all output emitted by a
-// sequence of filters. The empty stream is fed as input to the first filter.
-// The output of each filter is fed as input to the next filter. The
-// output of the last filter is returned.
-func ForEach(filters ...Filter) <-chan string {
+// ForEach() calls fn(s) for every item s in the output of filter and
+// returns either nil, or any error reported by the execution of the filter.
+func ForEach(filter Filter, fn func(s string)) error {
 	in := make(chan string, 0)
 	close(in)
 	out := make(chan string, 10000)
-	go runAndClose(Sequence(filters...), Arg{in, out})
-	return out
+	e := &filterErrors{}
+	go runAndClose(filter, Arg{in, out, e})
+	for s := range out {
+		fn(s)
+	}
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	switch len(e.errors) {
+	case 0:
+		return nil
+	case 1:
+		return e.errors[0]
+	default:
+		return fmt.Errorf("Filter errors: %v", e.errors)
+	}
 }
 
 // Print() prints all items emitted by a sequence of filters, one per
 // line. The empty stream is fed as input to the first filter.  The
 // output of each filter is fed as input to the next filter. The
 // output of the last filter is printed.
-func Print(filters ...Filter) {
-	for s := range ForEach(filters...) {
+func Print(filters ...Filter) error {
+	return ForEach(Sequence(filters...), func(s string) {
 		fmt.Println(s)
-	}
+	})
 }
 
 // Sequence returns a filter that is the concatenation of all filter arguments.
@@ -55,10 +83,10 @@ func Sequence(filters ...Filter) Filter {
 		in := arg.In
 		for _, f := range filters {
 			c := make(chan string, 10000)
-			go runAndClose(f, Arg{in, c})
+			go runAndClose(f, Arg{in, c, arg.errors})
 			in = c
 		}
-		passThrough(Arg{in, arg.Out})
+		passThrough(Arg{in, arg.Out, arg.errors})
 	}
 }
 
@@ -79,10 +107,6 @@ func splitIntoLines(rd io.Reader, arg Arg) {
 	for scanner.Scan() {
 		arg.Out <- scanner.Text()
 	}
-}
-
-func reportError(err error) {
-	fmt.Fprintln(os.Stderr, err)
 }
 
 // Echo copies its input and then emits items.
@@ -112,7 +136,7 @@ func Cat(filenames ...string) Filter {
 		for _, f := range filenames {
 			file, err := os.Open(f)
 			if err != nil {
-				reportError(err)
+				arg.ReportError(err)
 				continue
 			}
 			splitIntoLines(file, arg)

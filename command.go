@@ -1,6 +1,7 @@
 package pipe
 
 import (
+	"io"
 	"os"
 	"os/exec"
 )
@@ -39,5 +40,13 @@ func Cat(filenames ...string) Filter {
 			splitIntoLines(file, arg)
 			file.Close()
 		}
+	}
+}
+
+// Lines copies all input and then emits each line found in reader.
+func Lines(reader io.Reader) Filter {
+	return func(arg Arg) {
+		passThrough(arg)
+		splitIntoLines(reader, arg)
 	}
 }

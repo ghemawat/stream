@@ -11,17 +11,17 @@ output of one filter is fed as input to the next filter.  The empty
 input is passed to the first filter. The following sequence will
 print two lines to standard output:
 
-	err := Run(
-		Echo("hello", "world"),
-		Reverse(),
-		WriteLines(os.Stdout),
+	err := pipe.Run(
+		pipe.Echo("hello", "world"),
+		pipe.Reverse(),
+		pipe.WriteLines(os.Stdout),
 	)
 
 An application can implement its own filters easily. For example,
-Repeat(n) returns a filter that repeats every input n times:
+repeat(n) returns a filter that repeats every input n times:
 
-	func Repeat(n int) Filter {
-		return func(arg Arg) {
+	func repeat(n int) Filter {
+		return func(arg pipe.Arg) {
 			for s := range arg.In {
 				for i := 0; i < n; i++ {
 					arg.Out <- s
@@ -30,9 +30,9 @@ Repeat(n) returns a filter that repeats every input n times:
 		}
 	}
 
-	Run(
-		Echo("hello"),
-		Repeat(10),
+	pipe.Run(
+		pipe.Echo("hello"),
+		repeat(10),
 	)
 */
 package pipe

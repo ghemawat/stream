@@ -45,6 +45,18 @@ func ExampleForEach() {
 	// 12345
 }
 
+func ExampleRun() {
+	pipe.Run(
+		pipe.Echo("line 1"),
+		pipe.Echo("line 2"),
+		pipe.WriteLines(os.Stdout),
+	)
+	// Output:
+	// line 1
+	// line 2
+	// line 3
+}
+
 func ExampleEcho() {
 	pipe.Run(
 		pipe.Echo("hello", "world"),

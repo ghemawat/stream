@@ -25,6 +25,7 @@ Repeat(n) returns a filter that repeats every input n times:
 			for s := range arg.In {
 				for i := 0; i < n; i++ {
 					arg.Out <- s
+				}
 			}
 		}
 	}

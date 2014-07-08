@@ -5,14 +5,14 @@ import (
 	"path/filepath"
 )
 
-// FindMatch is a mask that controls the types of nodes emitted by Find.
 type FindMatch int
 
+// Mask items that can be passed to Find.
 const (
-	FILES    FindMatch = 1    // Match regular files
-	DIRS               = 2    // Match directories
-	SYMLINKS           = 4    // Match symbolic links
-	ALL                = 0xff // Match everything
+	FILES    FindMatch = 1      // Match regular files
+	DIRS               = 2      // Match directories
+	SYMLINKS           = 4      // Match symbolic links
+	ALL                = 0xffff // Match everything
 )
 
 // Find copies all input and then produces a sequence of items, one

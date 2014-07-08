@@ -14,7 +14,7 @@ print two lines to standard output:
 	Run(
 		Echo("hello", "world"),
 		Reverse(),
-		Tee(os.Stdout),
+		WriteLines(os.Stdout),
 	)
 
 An application can implement its own filters easily. For example,
@@ -136,7 +136,8 @@ func splitIntoLines(rd io.Reader, arg Arg) {
 	}
 }
 
-// Echo copies its input and then emits items.
+// Echo emits items.
+// Any input items are copied verbatim to the output before items are emitted.
 func Echo(items ...string) Filter {
 	return func(arg Arg) {
 		passThrough(arg)

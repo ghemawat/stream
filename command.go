@@ -6,6 +6,8 @@ import (
 
 // CommandOutput executes "cmd args..." and produces one item per line in
 // the output of the command.
+//
+// Any input items are copied verbatim to the output before cmd is executed.
 func CommandOutput(cmd string, args ...string) Filter {
 	// TODO: Also add xargs, unix command filter
 	return func(arg Arg) {

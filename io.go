@@ -5,7 +5,13 @@ import (
 	"os"
 )
 
-// Cat copies all input and then emits each line from each named file in order.
+// Cat emits each line from each named file in order.
+//
+// One difference from the "cat" binary is that any input items are
+// copied verbatim to the output before any data from the named files
+// is emitted. So the following two pipelines are equivalent:
+//	Cat("a", "b")
+//	Sequence(Cat("a"), Cat(b"))
 func Cat(filenames ...string) Filter {
 	return func(arg Arg) {
 		passThrough(arg)
@@ -21,8 +27,9 @@ func Cat(filenames ...string) Filter {
 	}
 }
 
-// Tee copies all input to both writer and the output channel.
-func Tee(writer io.Writer) Filter {
+// WriteLines emits each input item s and in addition prints s to writer
+// followed by a newline.
+func WriteLines(writer io.Writer) Filter {
 	return func(arg Arg) {
 		for s := range arg.In {
 			io.WriteString(writer, s)
@@ -32,8 +39,9 @@ func Tee(writer io.Writer) Filter {
 	}
 }
 
-// Lines copies all input and then emits each line found in reader.
-func Lines(reader io.Reader) Filter {
+// ReadLines emits each line found in reader.
+// Any input items are copied verbatim to the output before reader is processed.
+func ReadLines(reader io.Reader) Filter {
 	return func(arg Arg) {
 		passThrough(arg)
 		splitIntoLines(reader, arg)

@@ -31,7 +31,7 @@ func Cat(filenames ...string) Filter {
 
 // WriteLines prints each input item s followed by a newline to
 // writer; and in addition it emits s.  Therefore WriteLines()
-// ca be used like the "tee" command, which can often be useful
+// can be used like the "tee" command, which can often be useful
 // for debugging.
 func WriteLines(writer io.Writer) Filter {
 	return func(arg Arg) {

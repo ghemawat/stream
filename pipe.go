@@ -85,13 +85,13 @@ func Sequence(filters ...Filter) Filter {
 	}
 }
 
-// Run() executes the sequence of filters and discards all output.
+// Run executes the sequence of filters and discards all output.
 // It returns either nil, an error if any filter reported an error.
 func Run(filters ...Filter) error {
 	return ForEach(Sequence(filters...), func(s string) {})
 }
 
-// ForEach() calls fn(s) for every item s in the output of filter and
+// ForEach calls fn(s) for every item s in the output of filter and
 // returns either nil, or any error reported by the execution of the filter.
 func ForEach(filter Filter, fn func(s string)) error {
 	in := make(chan string, 0)
@@ -302,7 +302,7 @@ func Last(n int) Filter {
 	}
 }
 
-// DropFirst yields all items except for the last n items that it receives.
+// DropLast yields all items except for the last n items that it receives.
 func DropLast(n int) Filter {
 	return func(arg Arg) {
 		var buf []string

@@ -85,9 +85,9 @@ func Numeric(n int) SortComparer {
 			// Errors sort after numbers.
 			if a4 != nil { // a had a parse error, b did not
 				return +1
-			} else { // b had a parse error, a did not
-				return -1
 			}
+			// b had a parse error, a did not
+			return -1
 		}
 
 		switch {

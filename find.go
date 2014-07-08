@@ -5,13 +5,17 @@ import (
 	"path/filepath"
 )
 
+// FindMatch is a bit mask that selects the types of filesystem nodes
+// (files, directories, etc.) that should be yielded by Find.
 type FindMatch int
 
+// Values that can be or-ed together and passed to Find to match different
+// types of filesystem nodes.
 const (
-	FILES    FindMatch = 1      // Match regular files
-	DIRS               = 2      // Match directories
-	SYMLINKS           = 4      // Match symbolic links
-	ALL                = 0xffff // Match everything
+	FILES    FindMatch = 1
+	DIRS               = 2
+	SYMLINKS           = 4
+	ALL                = 0xffff
 )
 
 // Find copies all input and then produces a sequence of items, one

@@ -168,15 +168,30 @@ func If(fn func(string) bool) Filter {
 	}
 }
 
+func errorFilter(err error) Filter {
+	return func(arg Arg) {
+		arg.ReportError(err)
+		for _ = range arg.In {
+			// Drop the input
+		}
+	}
+}
+
 // Grep emits every input x that matches the regular expression r.
 func Grep(r string) Filter {
-	re := regexp.MustCompile(r)
+	re, err := regexp.Compile(r)
+	if err != nil {
+		return errorFilter(err)
+	}
 	return If(re.MatchString)
 }
 
 // GrepNot emits every input x that does not match the regular expression r.
 func GrepNot(r string) Filter {
-	re := regexp.MustCompile(r)
+	re, err := regexp.Compile(r)
+	if err != nil {
+		return errorFilter(err)
+	}
 	return If(func(s string) bool { return !re.MatchString(s) })
 }
 
@@ -221,7 +236,10 @@ func UniqWithCount() Filter {
 // an input item with replacement.  The replacement string can contain
 // $1, $2, etc. which represent submatches of r.
 func Substitute(r, replacement string) Filter {
-	re := regexp.MustCompile(r)
+	re, err := regexp.Compile(r)
+	if err != nil {
+		return errorFilter(err)
+	}
 	return func(arg Arg) {
 		for s := range arg.In {
 			arg.Out <- re.ReplaceAllString(s, replacement)

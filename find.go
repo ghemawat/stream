@@ -7,7 +7,6 @@ import (
 
 type FindMatch int
 
-// Mask items that can be passed to Find.
 const (
 	FILES    FindMatch = 1      // Match regular files
 	DIRS               = 2      // Match directories

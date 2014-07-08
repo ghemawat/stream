@@ -11,7 +11,7 @@ output of one filter is fed as input to the next filter.  The empty
 input is passed to the first filter. The following sequence will
 print two lines to standard output:
 
-	Run(
+	err := Run(
 		Echo("hello", "world"),
 		Reverse(),
 		WriteLines(os.Stdout),
@@ -38,9 +38,7 @@ Repeat(n) returns a filter that repeats every input n times:
 package pipe
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"regexp"
 	"sync"
 )
@@ -126,13 +124,6 @@ func runAndClose(f Filter, arg Arg) {
 func passThrough(arg Arg) {
 	for s := range arg.In {
 		arg.Out <- s
-	}
-}
-
-func splitIntoLines(rd io.Reader, arg Arg) {
-	scanner := bufio.NewScanner(rd)
-	for scanner.Scan() {
-		arg.Out <- scanner.Text()
 	}
 }
 

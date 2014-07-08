@@ -1,6 +1,8 @@
 package pipe
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"os"
 )
@@ -27,23 +29,39 @@ func Cat(filenames ...string) Filter {
 	}
 }
 
-// WriteLines emits each input item s and in addition prints s to writer
-// followed by a newline.
+// WriteLines prints each input item s followed by a newline to
+// writer; and in addition it emits s.  Therefore WriteLines()
+// ca be used like the "tee" command, which can often be useful
+// for debugging.
 func WriteLines(writer io.Writer) Filter {
 	return func(arg Arg) {
+		reported := false
 		for s := range arg.In {
-			io.WriteString(writer, s)
-			io.WriteString(writer, "\n")
+			_, err := fmt.Fprintln(writer, s)
+			if !reported && err != nil {
+				arg.ReportError(err)
+				reported = true
+			}
 			arg.Out <- s
 		}
 	}
 }
 
-// ReadLines emits each line found in reader.
-// Any input items are copied verbatim to the output before reader is processed.
+// ReadLines emits each line found in reader.  Any input items are
+// copied verbatim to the output before reader is processed.
 func ReadLines(reader io.Reader) Filter {
 	return func(arg Arg) {
 		passThrough(arg)
 		splitIntoLines(reader, arg)
+	}
+}
+
+func splitIntoLines(rd io.Reader, arg Arg) {
+	scanner := bufio.NewScanner(rd)
+	for scanner.Scan() {
+		arg.Out <- scanner.Text()
+	}
+	if err := scanner.Err(); err != nil {
+		arg.ReportError(err)
 	}
 }

@@ -61,14 +61,18 @@ type Arg struct {
 // ReportError records an error encountered during an execution of a filter.
 // This error will be reported by whatever facility (e.g., ForEach or Run)
 // was being used to execute the filters.
+//
+// A filter should report any errors by calling ReportError.  Even if
+// the filter has reported an error, it should read all data from
+// arg.In, if only to disarded immediately.
 func (a *Arg) ReportError(err error) {
 	a.errors.mu.Lock()
 	defer a.errors.mu.Unlock()
 	a.errors.errors = append(a.errors.errors, err)
 }
 
-// Filter reads a sequence of strings from a channel and produces a
-// sequence on another channel.
+// Filter is the type of a function that reads a sequence of strings
+// from a channel and produces a sequence on another channel.
 type Filter func(Arg)
 
 // Sequence returns a filter that is the concatenation of all filter arguments.

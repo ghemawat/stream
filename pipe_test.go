@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"pipe"
+	"regexp"
 	_ "testing"
 	"time"
 )
@@ -20,6 +21,35 @@ func Example() {
 	// pipe.go
 	// pipe_test.go
 	// error: <nil>
+}
+
+func ExampleArg_ReportError() {
+	counter := func(arg pipe.Arg) {
+		re, err := regexp.Compile("[")
+		if err != nil {
+			arg.ReportError(err)
+			for _ = range arg.In {
+				// Disard input
+			}
+			return
+		}
+		n := 1
+		for s := range arg.In {
+			if re.MatchString(s) {
+				n++
+			}
+		}
+		arg.Out <- fmt.Sprint(n)
+	}
+	err := pipe.Run(
+		pipe.Numbers(1, 100),
+		counter,
+		pipe.WriteLines(os.Stdout),
+	)
+	if err == nil {
+		fmt.Println("did not catch error")
+	}
+	// Output:
 }
 
 func ExampleSequence() {
@@ -54,7 +84,6 @@ func ExampleRun() {
 	// Output:
 	// line 1
 	// line 2
-	// line 3
 }
 
 func ExampleEcho() {
@@ -404,7 +433,7 @@ func ExampleCut() {
 	// rld
 }
 
-func ExmapleSelect() {
+func ExampleSelect() {
 	pipe.Run(
 		pipe.Echo("hello world"),
 		pipe.Select(2, 3, 0, 1),

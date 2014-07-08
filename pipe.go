@@ -14,7 +14,7 @@ print two lines to standard output:
 	Run(
 		Echo("hello", "world"),
 		Reverse(),
-		Tee(os.stdout),
+		Tee(os.Stdout),
 	)
 
 An application can implement its own filters easily. For example,

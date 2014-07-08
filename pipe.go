@@ -1,16 +1,39 @@
-// Package pipe provides filters that can be chained together in a manner
-// similar to Unix pipelines. Each filter is a function that takes as
-// input a sequence of strings (read from a channel) and produces as
-// output a sequence of strings (written to a channel).
-//
-// When filters are chained together (via the Sequence function), the
-// output of one filter is fed as input to the next filter.  The empty
-// input is passed to the first filter. The output of the last filter
-// is returned to the caller.
-//
-// A filter can report errors by calling Arg.ReportError.  These errors
-// are saved away and returned to the caller once the filters have
-// finished execution.
+/*
+Package pipe provides filters that can be chained together in a manner
+similar to Unix pipelines.
+
+Each filter is a function that takes as input a sequence of
+strings (read from a channel) and produces as output a sequence of
+strings (written to a channel).
+
+Filters can be chained together (e.g., via the Run function), the
+output of one filter is fed as input to the next filter.  The empty
+input is passed to the first filter. The following sequence will
+print two lines to standard output:
+
+	Run(
+		Echo("hello", "world"),
+		Reverse(),
+		Tee(os.stdout),
+	)
+
+An application can implement its own filters easily. For example,
+Repeat(n) returns a filter that repeats every input n times:
+
+	func Repeat(n int) Filter {
+		return func(arg Arg) {
+			for s := range arg.In {
+				for i := 0; i < n; i++ {
+					arg.Out <- s
+			}
+		}
+	}
+
+	Run(
+		Echo("hello"),
+		Repeat(10),
+	)
+*/
 package pipe
 
 import (
@@ -37,7 +60,7 @@ type Arg struct {
 }
 
 // ReportError records an error encountered during an execution of a filter.
-// This error will be reported by whatever facility (e.g., ForEach or Print)
+// This error will be reported by whatever facility (e.g., ForEach or Run)
 // was being used to execute the filters.
 func (a *Arg) ReportError(err error) {
 	a.errors.mu.Lock()
@@ -63,6 +86,12 @@ func Sequence(filters ...Filter) Filter {
 	}
 }
 
+// Run() executes the sequence of filters and discards all output.
+// It returns either nil, an error if any filter reported an error.
+func Run(filters ...Filter) error {
+	return ForEach(Sequence(filters...), func(s string) {})
+}
+
 // ForEach() calls fn(s) for every item s in the output of filter and
 // returns either nil, or any error reported by the execution of the filter.
 func ForEach(filter Filter, fn func(s string)) error {
@@ -85,14 +114,6 @@ func ForEach(filter Filter, fn func(s string)) error {
 	default:
 		return fmt.Errorf("Filter errors: %s", e.errors)
 	}
-}
-
-// Print() prints all items emitted by a sequence of filters, one per
-// line; it returns either nil, an error if any filter reported an error.
-func Print(filters ...Filter) error {
-	return ForEach(Sequence(filters...), func(s string) {
-		fmt.Println(s)
-	})
 }
 
 func runAndClose(f Filter, arg Arg) {

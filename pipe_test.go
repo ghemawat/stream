@@ -2,57 +2,34 @@ package pipe
 
 import (
 	"fmt"
+	"os"
 	_ "testing"
 	"time"
 )
 
 func Example() {
-	err := Print(
+	err := Run(
 		Find(FILES, "."),
 		Grep(`pipe.*\.go$`),
-		NumberLines(),
+		Tee(os.Stdout),
 	)
 	fmt.Println("error:", err)
 	// Output:
-	//     1 pipe.go
-	//     2 pipe_test.go
+	// pipe.go
+	// pipe_test.go
 	// error: <nil>
 }
 
-func ExampleEmpty() {
-	Print()
+func ExampleSequence() {
+	ForEach(Sequence(
+		Echo("1 of 3"),
+		Echo("2 of 3"),
+		Echo("3 of 3"),
+	), func(s string) { fmt.Println(s) })
 	// Output:
-}
-
-func ExampleSingle() {
-	Print(Echo("foo"))
-	// Output:
-	// foo
-}
-
-func ExampleMultiple() {
-	Print(Echo("foo"), Echo("bar"))
-	// Output:
-	// foo
-	// bar
-}
-
-func ExampleSequence_empty() {
-	Print(Sequence())
-	// Output:
-}
-
-func ExampleSequence_one() {
-	Print(Sequence(Echo("1 of 1")))
-	// Output:
-	// 1 of 1
-}
-
-func ExampleSequence_two() {
-	Print(Sequence(Echo("1 of 2"), Echo("2 of 2")))
-	// Output:
-	// 1 of 2
-	// 2 of 2
+	// 1 of 3
+	// 2 of 3
+	// 3 of 3
 }
 
 func ExampleForEach() {
@@ -66,23 +43,21 @@ func ExampleForEach() {
 	// 12345
 }
 
-func ExamplePrint() {
-	Print(Echo("a"), Echo("b"), Echo("c"))
-	// Output:
-	// a
-	// b
-	// c
-}
-
 func ExampleEcho() {
-	Print(Echo("hello", "world"))
+	Run(
+		Echo("hello", "world"),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// hello
 	// world
 }
 
 func ExampleNumbers() {
-	Print(Numbers(2, 5))
+	Run(
+		Numbers(2, 5),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 2
 	// 3
@@ -91,11 +66,12 @@ func ExampleNumbers() {
 }
 
 func ExampleMap() {
-	Print(
+	Run(
 		Echo("hello", "there", "how", "are", "you?"),
 		Map(func(s string) string {
 			return fmt.Sprintf("%d %s", len(s), s)
 		}),
+		Tee(os.Stdout),
 	)
 	// Output:
 	// 5 hello
@@ -106,7 +82,11 @@ func ExampleMap() {
 }
 
 func ExampleIf() {
-	Print(Numbers(1, 12), If(func(s string) bool { return len(s) > 1 }))
+	Run(
+		Numbers(1, 12),
+		If(func(s string) bool { return len(s) > 1 }),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 10
 	// 11
@@ -114,7 +94,11 @@ func ExampleIf() {
 }
 
 func ExampleGrep() {
-	Print(Numbers(1, 12), Grep(".."))
+	Run(
+		Numbers(1, 12),
+		Grep(".."),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 10
 	// 11
@@ -122,7 +106,11 @@ func ExampleGrep() {
 }
 
 func ExampleGrepNot() {
-	Print(Numbers(1, 12), GrepNot("^.$"))
+	Run(
+		Numbers(1, 12),
+		GrepNot("^.$"),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 10
 	// 11
@@ -130,7 +118,11 @@ func ExampleGrepNot() {
 }
 
 func ExampleUniq() {
-	Print(Echo("a", "b", "b", "c", "b"), Uniq())
+	Run(
+		Echo("a", "b", "b", "c", "b"),
+		Uniq(),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// a
 	// b
@@ -139,9 +131,10 @@ func ExampleUniq() {
 }
 
 func ExampleUniqWithCount() {
-	Print(
+	Run(
 		Echo("a", "b", "b", "c"),
 		UniqWithCount(),
+		Tee(os.Stdout),
 	)
 	// Output:
 	// 1 a
@@ -150,7 +143,7 @@ func ExampleUniqWithCount() {
 }
 
 func ExampleParallelMap() {
-	Print(
+	Run(
 		Echo("hello", "there", "how", "are", "you?"),
 		ParallelMap(4, func(s string) string {
 			// Sleep some amount to ensure that ParalellMap
@@ -158,6 +151,7 @@ func ExampleParallelMap() {
 			time.Sleep(10 * time.Duration(len(s)) * time.Millisecond)
 			return fmt.Sprintf("%d %s", len(s), s)
 		}),
+		Tee(os.Stdout),
 	)
 	// Output:
 	// 5 hello
@@ -168,7 +162,11 @@ func ExampleParallelMap() {
 }
 
 func ExampleSubstitute() {
-	Print(Numbers(1, 5), Substitute("(3)", "$1$1"))
+	Run(
+		Numbers(1, 5),
+		Substitute("(3)", "$1$1"),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 1
 	// 2
@@ -178,7 +176,7 @@ func ExampleSubstitute() {
 }
 
 func ExampleNumeric() {
-	Print(
+	Run(
 		Echo(
 			"a 100",
 			"b 20",
@@ -186,6 +184,7 @@ func ExampleNumeric() {
 			"d",            // Will sort earliest since column 2 is missing
 		),
 		Sort(Numeric(2)),
+		Tee(os.Stdout),
 	)
 	// Output:
 	// d
@@ -195,13 +194,14 @@ func ExampleNumeric() {
 }
 
 func ExampleTextual() {
-	Print(
+	Run(
 		Echo(
 			"10 bananas",
 			"20 apples",
 			"30", // Will sort first since column 2 is missing
 		),
 		Sort(Textual(2)),
+		Tee(os.Stdout),
 	)
 	// Output:
 	// 30
@@ -210,13 +210,14 @@ func ExampleTextual() {
 }
 
 func ExampleDescending() {
-	Print(
+	Run(
 		Echo(
 			"100",
 			"20",
 			"50",
 		),
 		Sort(Descending(Numeric(1))),
+		Tee(os.Stdout),
 	)
 	// Output:
 	// 100
@@ -225,7 +226,11 @@ func ExampleDescending() {
 }
 
 func ExampleSort() {
-	Print(Echo("banana", "apple", "cheese", "apple"), Sort())
+	Run(
+		Echo("banana", "apple", "cheese", "apple"),
+		Sort(),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// apple
 	// apple
@@ -233,7 +238,7 @@ func ExampleSort() {
 	// cheese
 }
 func ExampleSort_twoTextColumns() {
-	Print(
+	Run(
 		Echo(
 			"2 green bananas",
 			"3 red apples",
@@ -242,6 +247,7 @@ func ExampleSort_twoTextColumns() {
 			"6 green apples",
 		),
 		Sort(Textual(2), Textual(3)),
+		Tee(os.Stdout),
 	)
 	// Output:
 	// 5 brown pears
@@ -252,14 +258,16 @@ func ExampleSort_twoTextColumns() {
 }
 
 func ExampleSort_twoNumericColumns() {
-	Print(
+	Run(
 		Echo(
 			"1970 12",
 			"1970 6",
 			"1950 6",
 			"1980 9",
 		),
-		Sort(Numeric(1), Numeric(2)))
+		Sort(Numeric(1), Numeric(2)),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 1950 6
 	// 1970 6
@@ -268,14 +276,16 @@ func ExampleSort_twoNumericColumns() {
 }
 
 func ExampleSort_mixedColumns() {
-	Print(
+	Run(
 		Echo(
 			"1970 march",
 			"1970 feb",
 			"1950 june",
 			"1980 sep",
 		),
-		Sort(Numeric(1), Textual(2)))
+		Sort(Numeric(1), Textual(2)),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 1950 june
 	// 1970 feb
@@ -284,17 +294,22 @@ func ExampleSort_mixedColumns() {
 }
 
 func ExampleReverse() {
-	Print(Echo("a", "b"), Reverse())
+	Run(
+		Echo("a", "b"),
+		Reverse(),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// b
 	// a
 }
 
 func ExampleSample() {
-	Print(
+	Run(
 		Numbers(100, 200),
 		Sample(4),
 		Sort(),
+		Tee(os.Stdout),
 	)
 	// Output:
 	// 122
@@ -304,7 +319,11 @@ func ExampleSample() {
 }
 
 func ExampleFirst() {
-	Print(Numbers(1, 10), First(3))
+	Run(
+		Numbers(1, 10),
+		First(3),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 1
 	// 2
@@ -312,21 +331,33 @@ func ExampleFirst() {
 }
 
 func ExampleLast() {
-	Print(Numbers(1, 10), Last(2))
+	Run(
+		Numbers(1, 10),
+		Last(2),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 9
 	// 10
 }
 
 func ExampleDropFirst() {
-	Print(Numbers(1, 10), DropFirst(8))
+	Run(
+		Numbers(1, 10),
+		DropFirst(8),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 9
 	// 10
 }
 
 func ExampleDropLast() {
-	Print(Numbers(1, 10), DropLast(3))
+	Run(
+		Numbers(1, 10),
+		DropLast(3),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// 1
 	// 2
@@ -338,34 +369,54 @@ func ExampleDropLast() {
 }
 
 func ExampleNumberLines() {
-	Print(Echo("a", "b"), NumberLines())
+	Run(
+		Echo("a", "b"),
+		NumberLines(),
+		Tee(os.Stdout),
+	)
 	// Output:
 	//     1 a
 	//     2 b
 }
 
 func ExampleCut() {
-	Print(Echo("hello", "world."), Cut(2, 4))
+	Run(
+		Echo("hello", "world."),
+		Cut(2, 4),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// llo
 	// rld
 }
 
 func ExmapleSelect() {
-	Print(Echo("hello world"), Select(2, 3, 0, 1))
+	Run(
+		Echo("hello world"),
+		Select(2, 3, 0, 1),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// world hello world hello
 }
 
 func ExampleFind() {
-	Print(Find(FILES, "."), Grep("pipe"))
+	Run(
+		Find(FILES, "."),
+		Grep("pipe"),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// pipe.go
 	// pipe_test.go
 }
 
 func ExampleFind_dirs() {
-	Print(Find(DIRS, "."), GrepNot("git"))
+	Run(
+		Find(DIRS, "."),
+		GrepNot("git"),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// .
 }
@@ -378,16 +429,21 @@ func ExampleFind_error() {
 }
 
 func ExampleCat() {
-	Print(Cat("pipe_test.go"), Grep("^func ExampleCat"))
+	Run(
+		Cat("pipe_test.go"),
+		Grep("^func ExampleCat"),
+		Tee(os.Stdout),
+	)
 	// Output:
 	// func ExampleCat() {
 }
 
 func ExampleCommandOutput() {
-	Print(
+	Run(
 		CommandOutput("find", ".", "-type", "f", "-print"),
 		Grep(`^\./pipe.*\.go$`),
 		Sort(),
+		Tee(os.Stdout),
 	)
 
 	// Output:

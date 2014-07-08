@@ -1,18 +1,19 @@
-package pipe
+package pipe_test
 
 import (
 	"bytes"
 	"fmt"
 	"os"
+	"pipe"
 	_ "testing"
 	"time"
 )
 
 func Example() {
-	err := Run(
-		Find(FILES, "."),
-		Grep(`pipe.*\.go$`),
-		WriteLines(os.Stdout),
+	err := pipe.Run(
+		pipe.Find(pipe.FILES, "."),
+		pipe.Grep(`pipe.*\.go$`),
+		pipe.WriteLines(os.Stdout),
 	)
 	fmt.Println("error:", err)
 	// Output:
@@ -22,10 +23,10 @@ func Example() {
 }
 
 func ExampleSequence() {
-	ForEach(Sequence(
-		Echo("1 of 3"),
-		Echo("2 of 3"),
-		Echo("3 of 3"),
+	pipe.ForEach(pipe.Sequence(
+		pipe.Echo("1 of 3"),
+		pipe.Echo("2 of 3"),
+		pipe.Echo("3 of 3"),
 	), func(s string) { fmt.Println(s) })
 	// Output:
 	// 1 of 3
@@ -34,7 +35,7 @@ func ExampleSequence() {
 }
 
 func ExampleForEach() {
-	err := ForEach(Numbers(1, 5), func(s string) {
+	err := pipe.ForEach(pipe.Numbers(1, 5), func(s string) {
 		fmt.Print(s)
 	})
 	if err != nil {
@@ -45,9 +46,9 @@ func ExampleForEach() {
 }
 
 func ExampleEcho() {
-	Run(
-		Echo("hello", "world"),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Echo("hello", "world"),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// hello
@@ -55,9 +56,9 @@ func ExampleEcho() {
 }
 
 func ExampleNumbers() {
-	Run(
-		Numbers(2, 5),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(2, 5),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 2
@@ -67,12 +68,12 @@ func ExampleNumbers() {
 }
 
 func ExampleMap() {
-	Run(
-		Echo("hello", "there", "how", "are", "you?"),
-		Map(func(s string) string {
+	pipe.Run(
+		pipe.Echo("hello", "there", "how", "are", "you?"),
+		pipe.Map(func(s string) string {
 			return fmt.Sprintf("%d %s", len(s), s)
 		}),
-		WriteLines(os.Stdout),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 5 hello
@@ -83,10 +84,10 @@ func ExampleMap() {
 }
 
 func ExampleIf() {
-	Run(
-		Numbers(1, 12),
-		If(func(s string) bool { return len(s) > 1 }),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 12),
+		pipe.If(func(s string) bool { return len(s) > 1 }),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 10
@@ -95,10 +96,10 @@ func ExampleIf() {
 }
 
 func ExampleGrep() {
-	Run(
-		Numbers(1, 12),
-		Grep(".."),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 12),
+		pipe.Grep(".."),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 10
@@ -107,10 +108,10 @@ func ExampleGrep() {
 }
 
 func ExampleGrepNot() {
-	Run(
-		Numbers(1, 12),
-		GrepNot("^.$"),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 12),
+		pipe.GrepNot("^.$"),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 10
@@ -119,10 +120,10 @@ func ExampleGrepNot() {
 }
 
 func ExampleUniq() {
-	Run(
-		Echo("a", "b", "b", "c", "b"),
-		Uniq(),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Echo("a", "b", "b", "c", "b"),
+		pipe.Uniq(),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// a
@@ -132,10 +133,10 @@ func ExampleUniq() {
 }
 
 func ExampleUniqWithCount() {
-	Run(
-		Echo("a", "b", "b", "c"),
-		UniqWithCount(),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Echo("a", "b", "b", "c"),
+		pipe.UniqWithCount(),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1 a
@@ -144,15 +145,15 @@ func ExampleUniqWithCount() {
 }
 
 func ExampleParallelMap() {
-	Run(
-		Echo("hello", "there", "how", "are", "you?"),
-		ParallelMap(4, func(s string) string {
+	pipe.Run(
+		pipe.Echo("hello", "there", "how", "are", "you?"),
+		pipe.ParallelMap(4, func(s string) string {
 			// Sleep some amount to ensure that ParalellMap
 			// implementation handles out of order results.
 			time.Sleep(10 * time.Duration(len(s)) * time.Millisecond)
 			return fmt.Sprintf("%d %s", len(s), s)
 		}),
-		WriteLines(os.Stdout),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 5 hello
@@ -163,10 +164,10 @@ func ExampleParallelMap() {
 }
 
 func ExampleSubstitute() {
-	Run(
-		Numbers(1, 5),
-		Substitute("(3)", "$1$1"),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 5),
+		pipe.Substitute("(3)", "$1$1"),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1
@@ -177,15 +178,15 @@ func ExampleSubstitute() {
 }
 
 func ExampleNumeric() {
-	Run(
-		Echo(
+	pipe.Run(
+		pipe.Echo(
 			"a 100",
 			"b 20",
 			"c notanumber", // Will sort last since column 2 is not a number
 			"d",            // Will sort earliest since column 2 is missing
 		),
-		Sort(Numeric(2)),
-		WriteLines(os.Stdout),
+		pipe.Sort(pipe.Numeric(2)),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// d
@@ -195,14 +196,14 @@ func ExampleNumeric() {
 }
 
 func ExampleTextual() {
-	Run(
-		Echo(
+	pipe.Run(
+		pipe.Echo(
 			"10 bananas",
 			"20 apples",
 			"30", // Will sort first since column 2 is missing
 		),
-		Sort(Textual(2)),
-		WriteLines(os.Stdout),
+		pipe.Sort(pipe.Textual(2)),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 30
@@ -211,14 +212,14 @@ func ExampleTextual() {
 }
 
 func ExampleDescending() {
-	Run(
-		Echo(
+	pipe.Run(
+		pipe.Echo(
 			"100",
 			"20",
 			"50",
 		),
-		Sort(Descending(Numeric(1))),
-		WriteLines(os.Stdout),
+		pipe.Sort(pipe.Descending(pipe.Numeric(1))),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 100
@@ -227,10 +228,10 @@ func ExampleDescending() {
 }
 
 func ExampleSort() {
-	Run(
-		Echo("banana", "apple", "cheese", "apple"),
-		Sort(),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Echo("banana", "apple", "cheese", "apple"),
+		pipe.Sort(),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// apple
@@ -239,16 +240,16 @@ func ExampleSort() {
 	// cheese
 }
 func ExampleSort_twoTextColumns() {
-	Run(
-		Echo(
+	pipe.Run(
+		pipe.Echo(
 			"2 green bananas",
 			"3 red apples",
 			"4 yellow bananas",
 			"5 brown pears",
 			"6 green apples",
 		),
-		Sort(Textual(2), Textual(3)),
-		WriteLines(os.Stdout),
+		pipe.Sort(pipe.Textual(2), pipe.Textual(3)),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 5 brown pears
@@ -259,15 +260,15 @@ func ExampleSort_twoTextColumns() {
 }
 
 func ExampleSort_twoNumericColumns() {
-	Run(
-		Echo(
+	pipe.Run(
+		pipe.Echo(
 			"1970 12",
 			"1970 6",
 			"1950 6",
 			"1980 9",
 		),
-		Sort(Numeric(1), Numeric(2)),
-		WriteLines(os.Stdout),
+		pipe.Sort(pipe.Numeric(1), pipe.Numeric(2)),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1950 6
@@ -277,15 +278,15 @@ func ExampleSort_twoNumericColumns() {
 }
 
 func ExampleSort_mixedColumns() {
-	Run(
-		Echo(
+	pipe.Run(
+		pipe.Echo(
 			"1970 march",
 			"1970 feb",
 			"1950 june",
 			"1980 sep",
 		),
-		Sort(Numeric(1), Textual(2)),
-		WriteLines(os.Stdout),
+		pipe.Sort(pipe.Numeric(1), pipe.Textual(2)),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1950 june
@@ -295,10 +296,10 @@ func ExampleSort_mixedColumns() {
 }
 
 func ExampleReverse() {
-	Run(
-		Echo("a", "b"),
-		Reverse(),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Echo("a", "b"),
+		pipe.Reverse(),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// b
@@ -306,11 +307,11 @@ func ExampleReverse() {
 }
 
 func ExampleSample() {
-	Run(
-		Numbers(100, 200),
-		Sample(4),
-		Sort(),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(100, 200),
+		pipe.Sample(4),
+		pipe.Sort(),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 122
@@ -320,10 +321,10 @@ func ExampleSample() {
 }
 
 func ExampleFirst() {
-	Run(
-		Numbers(1, 10),
-		First(3),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 10),
+		pipe.First(3),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1
@@ -332,10 +333,10 @@ func ExampleFirst() {
 }
 
 func ExampleLast() {
-	Run(
-		Numbers(1, 10),
-		Last(2),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 10),
+		pipe.Last(2),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 9
@@ -343,10 +344,10 @@ func ExampleLast() {
 }
 
 func ExampleDropFirst() {
-	Run(
-		Numbers(1, 10),
-		DropFirst(8),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 10),
+		pipe.DropFirst(8),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 9
@@ -354,10 +355,10 @@ func ExampleDropFirst() {
 }
 
 func ExampleDropLast() {
-	Run(
-		Numbers(1, 10),
-		DropLast(3),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 10),
+		pipe.DropLast(3),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1
@@ -370,10 +371,10 @@ func ExampleDropLast() {
 }
 
 func ExampleNumberLines() {
-	Run(
-		Echo("a", "b"),
-		NumberLines(),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Echo("a", "b"),
+		pipe.NumberLines(),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	//     1 a
@@ -381,10 +382,10 @@ func ExampleNumberLines() {
 }
 
 func ExampleCut() {
-	Run(
-		Echo("hello", "world."),
-		Cut(2, 4),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Echo("hello", "world."),
+		pipe.Cut(2, 4),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// llo
@@ -392,20 +393,20 @@ func ExampleCut() {
 }
 
 func ExmapleSelect() {
-	Run(
-		Echo("hello world"),
-		Select(2, 3, 0, 1),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Echo("hello world"),
+		pipe.Select(2, 3, 0, 1),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// world hello world hello
 }
 
 func ExampleFind() {
-	Run(
-		Find(FILES, "."),
-		Grep("pipe"),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Find(pipe.FILES, "."),
+		pipe.Grep("pipe"),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// pipe.go
@@ -413,37 +414,37 @@ func ExampleFind() {
 }
 
 func ExampleFind_dirs() {
-	Run(
-		Find(DIRS, "."),
-		GrepNot("git"),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Find(pipe.DIRS, "."),
+		pipe.GrepNot("git"),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// .
 }
 
 func ExampleFind_error() {
-	err := Run(Find(ALL, "/no_such_dir"))
+	err := pipe.Run(pipe.Find(pipe.ALL, "/no_such_dir"))
 	if err == nil {
-		fmt.Println("Find did not return expected error")
+		fmt.Println("pipe.Find did not return expected error")
 	}
 	// Output:
 }
 
 func ExampleCat() {
-	Run(
-		Cat("pipe_test.go"),
-		Grep("^func ExampleCat"),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Cat("pipe_test.go"),
+		pipe.Grep("^func ExampleCat"),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// func ExampleCat() {
 }
 
 func ExampleWriteLines() {
-	Run(
-		Numbers(1, 3),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.Numbers(1, 3),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1
@@ -452,10 +453,10 @@ func ExampleWriteLines() {
 }
 
 func ExampleReadLines() {
-	Run(
-		ReadLines(bytes.NewBufferString("the\nquick\nbrown\nfox\n")),
-		Sort(),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.ReadLines(bytes.NewBufferString("the\nquick\nbrown\nfox\n")),
+		pipe.Sort(),
+		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
 	// brown
@@ -465,11 +466,11 @@ func ExampleReadLines() {
 }
 
 func ExampleCommandOutput() {
-	Run(
-		CommandOutput("find", ".", "-type", "f", "-print"),
-		Grep(`^\./pipe.*\.go$`),
-		Sort(),
-		WriteLines(os.Stdout),
+	pipe.Run(
+		pipe.CommandOutput("find", ".", "-type", "f", "-print"),
+		pipe.Grep(`^\./pipe.*\.go$`),
+		pipe.Sort(),
+		pipe.WriteLines(os.Stdout),
 	)
 
 	// Output:
@@ -478,7 +479,7 @@ func ExampleCommandOutput() {
 }
 
 func ExampleCommandOutput_error() {
-	err := Run(CommandOutput("no_such_command"))
+	err := pipe.Run(pipe.CommandOutput("no_such_command"))
 	if err == nil {
 		fmt.Println("execution of missing command succeeded unexpectedly")
 	}

@@ -338,9 +338,10 @@ func NumberLines() Filter {
 	}
 }
 
-// Slice emits just the bytes indexed [startOffset..endOffset) of each
-// input item.  Note that unlike the "cut" utility, offsets are numbered
-// starting at zero, and the end offset is not included in the output.
+// Slice emits s[startOffset:endOffset] for each input item s.  Note
+// that Slice follows Go conventions, and unlike the "cut" utility,
+// offsets are numbered starting at zero, and the end offset is not
+// included in the output.
 func Slice(startOffset, endOffset int) Filter {
 	return func(arg Arg) {
 		for s := range arg.In {

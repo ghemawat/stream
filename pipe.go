@@ -70,7 +70,7 @@ type Arg struct {
 //
 // A filter should report any errors by calling ReportError.  Even if
 // the filter has reported an error, it should read all data from
-// arg.In, if only to disarded immediately.
+// arg.In, if only to disard it immediately.
 func (a *Arg) ReportError(err error) {
 	a.errors.mu.Lock()
 	defer a.errors.mu.Unlock()

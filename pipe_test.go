@@ -1,9 +1,7 @@
-package pipe_test
+package pipe
 
 import (
-	// Clients should import github.com/ghemawat/pipe, but a
-	// relative import here allows easy local development.
-	"../pipe"
+	pipe "."
 	"bytes"
 	"fmt"
 	"os"

@@ -18,7 +18,7 @@ print two lines to standard output:
 	)
 
 An application can implement its own filters easily. For example,
-repeat(n) returns a filter that repeats every input n times:
+repeat(n) returns a filter that repeats every input n times.
 
 	func repeat(n int) Filter {
 		return func(arg pipe.Arg) {
@@ -34,6 +34,12 @@ repeat(n) returns a filter that repeats every input n times:
 		pipe.Echo("hello"),
 		repeat(10),
 	)
+
+Note that repeat is not a Filter since it needs to accept the
+parameter n. Instead, it returns a Filter.  This convention is
+followed throughout this library: all filtering functionality is
+provided by functions that return a Filter.
+
 */
 package pipe
 

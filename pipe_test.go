@@ -28,7 +28,7 @@ func ExampleArg_ReportError() {
 		if err != nil {
 			arg.ReportError(err)
 			for _ = range arg.In {
-				// Disard input
+				// Discard input
 			}
 			return
 		}

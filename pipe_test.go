@@ -1,10 +1,10 @@
 package pipe_test
 
 import (
+	"../pipe"
 	"bytes"
 	"fmt"
 	"os"
-	"pipe"
 	"regexp"
 	_ "testing"
 	"time"

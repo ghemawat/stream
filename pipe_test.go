@@ -353,11 +353,7 @@ func ExampleSample() {
 		pipe.Sort(),
 		pipe.WriteLines(os.Stdout),
 	)
-	// Output:
-	// 122
-	// 150
-	// 154
-	// 158
+	// Output not checked since it is non-deterministic.
 }
 
 func ExampleFirst() {

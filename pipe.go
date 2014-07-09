@@ -338,17 +338,17 @@ func NumberLines() Filter {
 	}
 }
 
-// Cut emits just the bytes indexed [start..end] of each input item.
-func Cut(start, end int) Filter {
+// Cut emits just the bytes indexed [startOffset..endOffset] of each input item.
+func Cut(startOffset, endOffset int) Filter {
 	return func(arg Arg) {
 		for s := range arg.In {
-			if len(s) > end {
-				s = s[:end+1]
+			if len(s) > endOffset {
+				s = s[:endOffset+1]
 			}
-			if len(s) < start {
+			if len(s) < startOffset {
 				s = ""
 			} else {
-				s = s[start:]
+				s = s[startOffset:]
 			}
 			arg.Out <- s
 		}

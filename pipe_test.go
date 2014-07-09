@@ -423,7 +423,7 @@ func ExampleNumberLines() {
 	//     2 b
 }
 
-func ExampleCut() {
+func ExampleSlice() {
 	pipe.Run(
 		pipe.Echo("hello", "world."),
 		pipe.Slice(2, 5),

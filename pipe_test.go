@@ -426,7 +426,7 @@ func ExampleNumberLines() {
 func ExampleCut() {
 	pipe.Run(
 		pipe.Echo("hello", "world."),
-		pipe.Cut(2, 4),
+		pipe.Slice(2, 5),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output:

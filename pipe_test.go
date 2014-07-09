@@ -350,7 +350,6 @@ func ExampleSample() {
 	pipe.Run(
 		pipe.Numbers(100, 200),
 		pipe.Sample(4),
-		pipe.Sort(),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output not checked since it is non-deterministic.

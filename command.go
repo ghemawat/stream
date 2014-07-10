@@ -17,8 +17,7 @@ func Command(command string, args ...string) Filter {
 		output, err := cmd.StdoutPipe()
 		if err != nil {
 			arg.ReportError(err)
-			for _ = range arg.In {
-				// Discard
+			for _ = range arg.In { // Discard
 			}
 			return
 		}
@@ -27,8 +26,7 @@ func Command(command string, args ...string) Filter {
 		input, err := cmd.StdinPipe()
 		if err != nil {
 			arg.ReportError(err)
-			for _ = range arg.In {
-				// Discard
+			for _ = range arg.In { // Discard
 			}
 			return
 		}
@@ -50,7 +48,3 @@ func Command(command string, args ...string) Filter {
 		}
 	}
 }
-
-// Example:
-//	pipe.Command(pipe.OUTPUT, "find", ".")
-//	pipe.Command(pipe.INPUT_OUTPUT, "wc", "-l")

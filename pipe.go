@@ -121,7 +121,7 @@ func ForEach(filter Filter, fn func(s string)) error {
 	case 1:
 		return e.errors[0]
 	default:
-		return fmt.Errorf("Filter errors: %s", e.errors)
+		return fmt.Errorf("pipe.Filter errors: %s", e.errors)
 	}
 }
 

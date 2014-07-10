@@ -500,9 +500,20 @@ func ExampleReadLines() {
 	// the
 }
 
-func ExampleCommandOutput() {
+func ExampleCommand_inputOutput() {
 	pipe.Run(
-		pipe.CommandOutput("find", ".", "-type", "f", "-print"),
+		pipe.Numbers(1, 100),
+		pipe.Command(pipe.INPUT_OUTPUT, "wc", "-l"),
+		pipe.WriteLines(os.Stdout),
+	)
+	// Output:
+	// 100
+}
+
+func ExampleCommand_output() {
+	pipe.Run(
+		pipe.Numbers(1, 100),
+		pipe.Command(pipe.OUTPUT, "find", ".", "-type", "f", "-print"),
 		pipe.Grep(`^\./pipe.*\.go$`),
 		pipe.Sort(),
 		pipe.WriteLines(os.Stdout),
@@ -513,8 +524,8 @@ func ExampleCommandOutput() {
 	// ./pipe_test.go
 }
 
-func ExampleCommandOutput_error() {
-	err := pipe.Run(pipe.CommandOutput("no_such_command"))
+func ExampleCommand_withError() {
+	err := pipe.Run(pipe.Command(pipe.OUTPUT, "no_such_command"))
 	if err == nil {
 		fmt.Println("execution of missing command succeeded unexpectedly")
 	}

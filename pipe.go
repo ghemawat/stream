@@ -358,11 +358,17 @@ func Slice(startOffset, endOffset int) Filter {
 	}
 }
 
-// Select splits each item into columns and yields the concatenation
-// of the columns numbers passed as arguments to Select.  Columns are
-// numbered starting at 1. A column number of 0 is interpreted as the
-// full string.
-func Select(columns ...int) Filter {
+// Columns splits each item into columns and yields the concatenation
+// of the columns numbers passed as arguments.  Columns are numbered
+// starting at 1.
+// string.
+func Columns(columns ...int) Filter {
+	for _, c := range columns {
+		if c <= 0 {
+			return errorFilter(fmt.Errorf("pipe.Columns: invalid column number %d", c))
+		}
+	}
+
 	return func(arg Arg) {
 		for s := range arg.In {
 			result := ""

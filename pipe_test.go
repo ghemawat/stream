@@ -427,14 +427,14 @@ func ExampleSlice() {
 	// rld
 }
 
-func ExampleSelect() {
+func ExampleColumns() {
 	pipe.Run(
 		pipe.Echo("hello world"),
-		pipe.Select(2, 3, 0, 1),
+		pipe.Columns(2, 3, 1),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
-	// world hello world hello
+	// world hello
 }
 
 func ExampleFind() {

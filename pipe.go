@@ -360,8 +360,8 @@ func Slice(startOffset, endOffset int) Filter {
 
 // Columns splits each item into columns and yields the concatenation
 // of the columns numbers passed as arguments.  Columns are numbered
-// starting at 1.
-// string.
+// starting at 1.  If a column number is bigger than the number of columns
+// in an item, it is skipped.
 func Columns(columns ...int) Filter {
 	for _, c := range columns {
 		if c <= 0 {

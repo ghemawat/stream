@@ -12,7 +12,9 @@ import (
 func Cat(filenames ...string) Filter {
 	return func(arg Arg) error {
 		if len(filenames) == 0 {
-			passThrough(arg)
+			for s := range arg.In {
+				arg.Out <- s
+			}
 			return nil
 		}
 		for _, f := range filenames {

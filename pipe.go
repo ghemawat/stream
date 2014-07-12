@@ -93,7 +93,9 @@ func Sequence(filters ...Filter) Filter {
 			go runFilter(f, Arg{in, c}, e)
 			in = c
 		}
-		passThrough(Arg{in, arg.Out})
+		for s := range in {
+			arg.Out <- s
+		}
 		return e.getError()
 	}
 }
@@ -131,13 +133,6 @@ func runFilter(f Filter, arg Arg, e *filterErrors) {
 		e.mu.Lock()
 		e.errors = append(e.errors, err)
 		e.mu.Unlock()
-	}
-}
-
-// passThrough copies all items read from in to out.
-func passThrough(arg Arg) {
-	for s := range arg.In {
-		arg.Out <- s
 	}
 }
 

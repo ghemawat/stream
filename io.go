@@ -45,11 +45,9 @@ func WriteLines(writer io.Writer) Filter {
 	}
 }
 
-// ReadLines emits each line found in reader.  Any input items are
-// copied verbatim to the output before reader is processed.
+// ReadLines emits each line found in reader.
 func ReadLines(reader io.Reader) Filter {
 	return func(arg Arg) error {
-		passThrough(arg)
 		return splitIntoLines(reader, arg)
 	}
 }

@@ -14,14 +14,15 @@ import (
 func Command(command string, args ...string) Filter {
 	return func(arg Arg) error {
 		cmd := exec.Command(command, args...)
+		input, err := cmd.StdinPipe()
+		if err != nil {
+			return err
+		}
 		output, err := cmd.StdoutPipe()
 		if err != nil {
 			return err
 		}
-
-		// Send incoming items to command's standard input
-		input, err := cmd.StdinPipe()
-		if err != nil {
+		if err := cmd.Start(); err != nil {
 			return err
 		}
 		go func() {
@@ -30,13 +31,9 @@ func Command(command string, args ...string) Filter {
 			}
 			input.Close()
 		}()
-
-		// Start the command and process it's standard output.
-		err = cmd.Start()
-		if err == nil {
-			splitIntoLines(output, arg)
-			err = cmd.Wait()
+		if err := splitIntoLines(output, arg); err != nil {
+			return err
 		}
-		return err
+		return cmd.Wait()
 	}
 }

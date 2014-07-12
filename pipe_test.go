@@ -50,14 +50,13 @@ func Example_error() {
 
 func ExampleSequence() {
 	pipe.ForEach(pipe.Sequence(
-		pipe.Echo("1 of 3"),
-		pipe.Echo("2 of 3"),
-		pipe.Echo("3 of 3"),
+		pipe.Numbers(1, 25),
+		pipe.Grep("3"),
 	), func(s string) { fmt.Println(s) })
 	// Output:
-	// 1 of 3
-	// 2 of 3
-	// 3 of 3
+	// 3
+	// 13
+	// 23
 }
 
 func ExampleForEach() {
@@ -73,8 +72,7 @@ func ExampleForEach() {
 
 func ExampleRun() {
 	pipe.Run(
-		pipe.Echo("line 1"),
-		pipe.Echo("line 2"),
+		pipe.Echo("line 1", "line 2"),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output:

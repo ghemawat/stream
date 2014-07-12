@@ -18,11 +18,10 @@ const (
 	ALL                = 0xffff
 )
 
-// Find copies all input and then produces a sequence of items, one
-// per file/directory/symlink found at or under dir that matches mask.
+// Find produces a sequence of items, one per file/directory/symlink
+// found at or under dir that matches mask.
 func Find(mask FindMatch, dir string) Filter {
 	return func(arg Arg) error {
-		passThrough(arg)
 		return filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
 			if e != nil {
 				return e

@@ -7,16 +7,14 @@ import (
 	"os"
 )
 
-// Cat emits each line from each named file in order.
-//
-// One difference from the "cat" binary is that any input items are
-// copied verbatim to the output before any data from the named files
-// is emitted. So the following two pipelines are equivalent:
-//	Cat("a", "b")
-//	Sequence(Cat("a"), Cat(b"))
+// Cat emits each line from each named file in order. If no arguments
+// are specified, Cat copies its input to its output.
 func Cat(filenames ...string) Filter {
 	return func(arg Arg) error {
-		passThrough(arg)
+		if len(filenames) == 0 {
+			passThrough(arg)
+			return nil
+		}
 		for _, f := range filenames {
 			file, err := os.Open(f)
 			if err == nil {

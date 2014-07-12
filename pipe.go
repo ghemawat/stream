@@ -118,11 +118,15 @@ func ForEach(filter Filter, fn func(s string)) error {
 	return e.getError()
 }
 
+func discard(in <-chan string) {
+	for _ = range in {
+	}
+}
+
 func runFilter(f Filter, arg Arg, e *filterErrors) {
 	err := f(arg)
 	close(arg.Out)
-	for _ = range arg.In { // Discard
-	}
+	discard(arg.In)
 	if err != nil {
 		e.mu.Lock()
 		e.errors = append(e.errors, err)
@@ -138,10 +142,8 @@ func passThrough(arg Arg) {
 }
 
 // Echo emits items.
-// Any input items are copied verbatim to the output before items are emitted.
 func Echo(items ...string) Filter {
 	return func(arg Arg) error {
-		passThrough(arg)
 		for _, s := range items {
 			arg.Out <- s
 		}
@@ -149,10 +151,9 @@ func Echo(items ...string) Filter {
 	}
 }
 
-// Numbers copies its input and then emits the integers x..y
+// Numbers emits the integers x..y
 func Numbers(x, y int) Filter {
 	return func(arg Arg) error {
-		passThrough(arg)
 		for i := x; i <= y; i++ {
 			arg.Out <- fmt.Sprintf("%d", i)
 		}

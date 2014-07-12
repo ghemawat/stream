@@ -21,9 +21,9 @@ const (
 // Find copies all input and then produces a sequence of items, one
 // per file/directory/symlink found at or under dir that matches mask.
 func Find(mask FindMatch, dir string) Filter {
-	return func(arg Arg) {
+	return func(arg Arg) error {
 		passThrough(arg)
-		err := filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
+		return filepath.Walk(dir, func(f string, s os.FileInfo, e error) error {
 			if e != nil {
 				return e
 			}
@@ -35,8 +35,5 @@ func Find(mask FindMatch, dir string) Filter {
 			}
 			return nil
 		})
-		if err != nil {
-			arg.ReportError(err)
-		}
 	}
 }

@@ -13,7 +13,7 @@ type parItem struct {
 // goroutines and yields the outputs of the fn calls. The output order
 // matches the input order.
 func ParallelMap(n int, fn func(string) string) Filter {
-	return func(arg Arg) {
+	return func(arg Arg) error {
 		// Attach a sequence number to each item.
 		source := make(chan parItem, 10000)
 		go func() {
@@ -58,5 +58,6 @@ func ParallelMap(n int, fn func(string) string) Filter {
 			}()
 		}
 		wg.Wait()
+		return nil
 	}
 }

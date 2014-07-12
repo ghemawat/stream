@@ -15,17 +15,19 @@ import (
 //	Cat("a", "b")
 //	Sequence(Cat("a"), Cat(b"))
 func Cat(filenames ...string) Filter {
-	return func(arg Arg) {
+	return func(arg Arg) error {
 		passThrough(arg)
 		for _, f := range filenames {
 			file, err := os.Open(f)
-			if err != nil {
-				arg.ReportError(err)
-				continue
+			if err == nil {
+				err = splitIntoLines(file, arg)
+				file.Close()
 			}
-			splitIntoLines(file, arg)
-			file.Close()
+			if err != nil {
+				return err
+			}
 		}
+		return nil
 	}
 }
 
@@ -34,34 +36,30 @@ func Cat(filenames ...string) Filter {
 // can be used like the "tee" command, which can often be useful
 // for debugging.
 func WriteLines(writer io.Writer) Filter {
-	return func(arg Arg) {
-		reported := false
+	return func(arg Arg) error {
 		for s := range arg.In {
-			_, err := fmt.Fprintln(writer, s)
-			if !reported && err != nil {
-				arg.ReportError(err)
-				reported = true
+			if _, err := fmt.Fprintln(writer, s); err != nil {
+				return err
 			}
 			arg.Out <- s
 		}
+		return nil
 	}
 }
 
 // ReadLines emits each line found in reader.  Any input items are
 // copied verbatim to the output before reader is processed.
 func ReadLines(reader io.Reader) Filter {
-	return func(arg Arg) {
+	return func(arg Arg) error {
 		passThrough(arg)
-		splitIntoLines(reader, arg)
+		return splitIntoLines(reader, arg)
 	}
 }
 
-func splitIntoLines(rd io.Reader, arg Arg) {
+func splitIntoLines(rd io.Reader, arg Arg) error {
 	scanner := bufio.NewScanner(rd)
 	for scanner.Scan() {
 		arg.Out <- scanner.Text()
 	}
-	if err := scanner.Err(); err != nil {
-		arg.ReportError(err)
-	}
+	return scanner.Err()
 }

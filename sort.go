@@ -129,7 +129,7 @@ func (c columns) Less(i, j int) bool {
 
 // Sort sorts its inputs by the specified sequence of comparers.
 func Sort(comparers ...SortComparer) Filter {
-	return func(arg Arg) {
+	return func(arg Arg) error {
 		cs := columns{Cmp: comparers}
 		for s := range arg.In {
 			cs.Data = append(cs.Data, s)
@@ -138,5 +138,6 @@ func Sort(comparers ...SortComparer) Filter {
 		for _, s := range cs.Data {
 			arg.Out <- s
 		}
+		return nil
 	}
 }

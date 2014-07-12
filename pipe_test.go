@@ -22,15 +22,11 @@ func Example() {
 	// error: <nil>
 }
 
-func ExampleArg_ReportError() {
-	counter := func(arg pipe.Arg) {
+func Example_error() {
+	counter := func(arg pipe.Arg) error {
 		re, err := regexp.Compile("[")
 		if err != nil {
-			arg.ReportError(err)
-			for _ = range arg.In {
-				// Discard input
-			}
-			return
+			return err
 		}
 		n := 1
 		for s := range arg.In {
@@ -39,6 +35,7 @@ func ExampleArg_ReportError() {
 			}
 		}
 		arg.Out <- fmt.Sprint(n)
+		return nil
 	}
 	err := pipe.Run(
 		pipe.Numbers(1, 100),

@@ -12,23 +12,17 @@ import (
 // split into lines and the lines form the output of the filter (with
 // trailing newlines removed).
 func Command(command string, args ...string) Filter {
-	return func(arg Arg) {
+	return func(arg Arg) error {
 		cmd := exec.Command(command, args...)
 		output, err := cmd.StdoutPipe()
 		if err != nil {
-			arg.ReportError(err)
-			for _ = range arg.In { // Discard
-			}
-			return
+			return err
 		}
 
 		// Send incoming items to command's standard input
 		input, err := cmd.StdinPipe()
 		if err != nil {
-			arg.ReportError(err)
-			for _ = range arg.In { // Discard
-			}
-			return
+			return err
 		}
 		go func() {
 			for s := range arg.In {
@@ -43,8 +37,6 @@ func Command(command string, args ...string) Filter {
 			splitIntoLines(output, arg)
 			err = cmd.Wait()
 		}
-		if err != nil {
-			arg.ReportError(err)
-		}
+		return err
 	}
 }

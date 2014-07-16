@@ -61,22 +61,3 @@ func splitIntoLines(rd io.Reader, arg Arg) error {
 	}
 	return scanner.Err()
 }
-
-// Progress copies all items to its output and reports a progress
-// message to writer every interval items.
-func Progress(writer io.Writer, interval int) Filter {
-	return func(arg Arg) error {
-		if interval <= 0 {
-			return fmt.Errorf("pipe.Progress: invalid interval %d", interval)
-		}
-		seen := 0
-		for s := range arg.In {
-			seen++
-			if seen%interval == 0 {
-				fmt.Fprintf(writer, "... %d\n", seen)
-			}
-			arg.Out <- s
-		}
-		return nil
-	}
-}

@@ -435,18 +435,6 @@ func ExampleSlice() {
 	// rld
 }
 
-func ExampleProgress() {
-	pipe.Run(
-		pipe.Numbers(1, 100),
-		pipe.Progress(os.Stdout, 25),
-	)
-	// Output:
-	// ... 25
-	// ... 50
-	// ... 75
-	// ... 100
-}
-
 func ExampleColumns() {
 	pipe.Run(
 		pipe.Echo("hello world"),

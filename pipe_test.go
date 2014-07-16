@@ -70,6 +70,19 @@ func ExampleForEach() {
 	// 12345
 }
 
+func ExampleOutput() {
+	result, err := pipe.Output(pipe.Numbers(1, 3))
+	for _, s := range result {
+		fmt.Println(s)
+	}
+	fmt.Println(err)
+	// Output:
+	// 1
+	// 2
+	// 3
+	// <nil>
+}
+
 func ExampleRun() {
 	pipe.Run(
 		pipe.Echo("line 1", "line 2"),
@@ -420,6 +433,18 @@ func ExampleSlice() {
 	// Output:
 	// llo
 	// rld
+}
+
+func ExampleProgress() {
+	pipe.Run(
+		pipe.Numbers(1, 100),
+		pipe.Progress(os.Stdout, 25),
+	)
+	// Output:
+	// ... 25
+	// ... 50
+	// ... 75
+	// ... 100
 }
 
 func ExampleColumns() {

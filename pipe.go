@@ -119,6 +119,19 @@ func ForEach(filter Filter, fn func(s string)) error {
 	return e.getError()
 }
 
+// Output returns a slice that contains all items that are
+// the output of filters.
+func Output(filters ...Filter) ([]string, error) {
+	var result []string
+	err := ForEach(Sequence(filters...), func(s string) {
+		result = append(result, s)
+	})
+	if err != nil {
+		result = nil // Discard results on error
+	}
+	return result, err
+}
+
 func discard(in <-chan string) {
 	for _ = range in {
 	}

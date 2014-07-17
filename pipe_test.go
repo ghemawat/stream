@@ -76,12 +76,12 @@ func ExampleOutput() {
 	for _, s := range result {
 		fmt.Println(s)
 	}
-	fmt.Println(err)
+	fmt.Println("error:", err)
 	// Output:
 	// 1
 	// 2
 	// 3
-	// <nil>
+	// error: <nil>
 }
 
 func ExampleRun() {
@@ -538,4 +538,16 @@ func ExampleCommand_withError() {
 		fmt.Println("execution of missing command succeeded unexpectedly")
 	}
 	// Output:
+}
+
+func ExampleXargs() {
+	err := pipe.Run(
+		pipe.Numbers(1, 5),
+		pipe.Xargs("echo"),
+		pipe.WriteLines(os.Stdout),
+	)
+	fmt.Println("error:", err)
+	// Output:
+	// 1 2 3 4 5
+	// error: <nil>
 }

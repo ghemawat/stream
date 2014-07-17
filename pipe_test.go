@@ -1,7 +1,8 @@
-package pipe
+package pipe_test
 
 import (
-	pipe "."
+	"github.com/ghemawat/pipe"
+
 	"bytes"
 	"fmt"
 	"os"

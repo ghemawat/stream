@@ -132,15 +132,11 @@ func Output(filters ...Filter) ([]string, error) {
 	return result, err
 }
 
-func discard(in <-chan string) {
-	for _ = range in {
-	}
-}
-
 func runFilter(f Filter, arg Arg, e *filterErrors) {
 	err := f(arg)
 	close(arg.Out)
-	discard(arg.In)
+	for _ = range arg.In { // Discard all unhandled input
+	}
 	if err != nil {
 		e.mu.Lock()
 		e.errors = append(e.errors, err)

@@ -11,5 +11,5 @@ go get github.com/ghemawat/pipe
 
 See godoc for further documentation and examples.
 
- * [github.com/ghemawat/pipe](http://godoc.org/github.com/ghemawat/pipe)
+ * [godoc.org/github.com/ghemawat/pipe](http://godoc.org/github.com/ghemawat/pipe)
 

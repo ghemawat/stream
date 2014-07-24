@@ -56,28 +56,11 @@ func Xargs(command string, args ...string) Filter {
 			baseBytes += 1 + len(a)
 		}
 
-		// Helper that executes command with accumulated arguments.
-		run := func() error {
-			cmd := exec.Command(command, items...)
-			output, err := cmd.StdoutPipe()
-			if err != nil {
-				return err
-			}
-			if err := cmd.Start(); err != nil {
-				return err
-			}
-			if err := splitIntoLines(output, arg); err != nil {
-				cmd.Wait()
-				return err
-			}
-			return cmd.Wait()
-		}
-
 		// Buffer items until we hit length limit
 		usedBytes := baseBytes
 		for s := range arg.In {
 			if len(items) > len(args) && usedBytes+1+len(s) >= limitBytes {
-				err := run()
+				err := runCommand(arg, command, items...)
 				if err != nil {
 					return err
 				}
@@ -88,8 +71,24 @@ func Xargs(command string, args ...string) Filter {
 			usedBytes += 1 + len(s)
 		}
 		if len(items) > len(args) {
-			return run()
+			return runCommand(arg, command, items...)
 		}
 		return nil
 	}
+}
+
+func runCommand(arg Arg, command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	output, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	if err := splitIntoLines(output, arg); err != nil {
+		cmd.Wait()
+		return err
+	}
+	return cmd.Wait()
 }

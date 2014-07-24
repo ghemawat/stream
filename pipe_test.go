@@ -551,3 +551,16 @@ func ExampleXargs() {
 	// 1 2 3 4 5
 	// error: <nil>
 }
+
+func ExampleXargs_splitArguments() {
+	err := pipe.Run(
+		pipe.Numbers(1, 2000),
+		pipe.Xargs("echo"),
+		pipe.Command("wc", "-l"),
+		pipe.WriteLines(os.Stdout),
+	)
+	fmt.Println("error:", err)
+	// Output:
+	// 3
+	// error: <nil>
+}

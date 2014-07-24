@@ -555,14 +555,12 @@ func ExampleXargs() {
 func ExampleXargs_splitArguments() {
 	// Xargs should split the long list of arguments into
 	// three executions to keep command length below 4096.
-	err := pipe.Run(
+	pipe.Run(
 		pipe.Numbers(1, 2000),
 		pipe.Xargs("echo"),
 		pipe.Command("wc", "-l"),
 		pipe.WriteLines(os.Stdout),
 	)
-	fmt.Println("error:", err)
 	// Output:
 	// 3
-	// error: <nil>
 }

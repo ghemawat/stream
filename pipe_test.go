@@ -311,6 +311,18 @@ func ExampleSorter_TextDecreasing() {
 	// 30
 }
 
+func ExampleSorter_By() {
+	pipe.Run(
+		pipe.Echo("bananas", "apples", "pears"),
+		pipe.Sort().By(func(a, b string) bool { return len(a) < len(b) }),
+		pipe.WriteLines(os.Stdout),
+	)
+	// Output:
+	// pears
+	// apples
+	// bananas
+}
+
 func ExampleReverse() {
 	pipe.Run(
 		pipe.Echo("a", "b"),

@@ -128,6 +128,19 @@ func (s Sorter) NumDecreasing(n int) Sorter {
 	return s.Num(n).flipLast()
 }
 
+// By adds a sort key to sort by the output of the less function.
+func (s Sorter) By(less func(a, b string) bool) Sorter {
+	return s.add(func(a, b string) int {
+		if less(a, b) {
+			return -1
+		}
+		if less(b, a) {
+			return +1
+		}
+		return 0
+	})
+}
+
 func (s Sorter) add(cmp sortComparer) Sorter {
 	// Do not append in place because caller may end up copying
 	// one Sorter to another and supplying different keys to them.

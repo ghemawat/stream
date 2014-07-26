@@ -20,7 +20,7 @@ print two lines to standard output:
 An application can implement its own filters easily. For example,
 repeat(n) returns a filter that repeats every input n times.
 
-	func repeat(n int) Filter {
+	func Repeat(n int) Filter {
 		return func(arg pipe.Arg) error {
 			for s := range arg.In {
 				for i := 0; i < n; i++ {
@@ -33,14 +33,13 @@ repeat(n) returns a filter that repeats every input n times.
 
 	pipe.Run(
 		pipe.Echo("hello"),
-		repeat(10),
+		Repeat(10),
 	)
 
-Note that repeat is not a Filter since it needs to accept the
+Note that Repeat is not a Filter since it needs to accept the
 parameter n. Instead, it returns a Filter.  This convention is
 followed throughout this library: all filtering functionality is
 provided by functions that return a Filter.
-
 */
 package pipe
 
@@ -72,12 +71,13 @@ func (e *filterErrors) getError() error {
 // produces the input to the filter, and Arg.Out is a channel that
 // receives the output from the filter.
 type Arg struct {
-	In  <-chan string
-	Out chan<- string
+	In    <-chan string
+	Out   chan<- string
+	dummy bool // To allow later expansion
 }
 
-// Filter is the type of a function that reads a sequence of strings
-// from a channel and produces a sequence on another channel. A Filter
+// Filter is a function that reads a sequence of strings from a
+// channel and produces a sequence on another channel. A Filter
 // returns nil on success, an error otherwise.
 type Filter func(Arg) error
 
@@ -89,7 +89,7 @@ func Sequence(filters ...Filter) Filter {
 		in := arg.In
 		for _, f := range filters {
 			c := make(chan string, 10000)
-			go runFilter(f, Arg{in, c}, e)
+			go runFilter(f, Arg{In: in, Out: c}, e)
 			in = c
 		}
 		for s := range in {
@@ -112,7 +112,7 @@ func ForEach(filter Filter, fn func(s string)) error {
 	close(in)
 	out := make(chan string, 10000)
 	e := &filterErrors{}
-	go runFilter(filter, Arg{in, out}, e)
+	go runFilter(filter, Arg{In: in, Out: out}, e)
 	for s := range out {
 		fn(s)
 	}

@@ -210,56 +210,6 @@ func ExampleSubstitute() {
 	// 5
 }
 
-func ExampleNumeric() {
-	pipe.Run(
-		pipe.Echo(
-			"a 100",
-			"b 20",
-			"c notanumber", // Will sort last since column 2 is not a number
-			"d",            // Will sort earliest since column 2 is missing
-		),
-		pipe.Sort(pipe.Numeric(2)),
-		pipe.WriteLines(os.Stdout),
-	)
-	// Output:
-	// d
-	// b 20
-	// a 100
-	// c notanumber
-}
-
-func ExampleTextual() {
-	pipe.Run(
-		pipe.Echo(
-			"10 bananas",
-			"20 apples",
-			"30", // Will sort first since column 2 is missing
-		),
-		pipe.Sort(pipe.Textual(2)),
-		pipe.WriteLines(os.Stdout),
-	)
-	// Output:
-	// 30
-	// 20 apples
-	// 10 bananas
-}
-
-func ExampleDescending() {
-	pipe.Run(
-		pipe.Echo(
-			"100",
-			"20",
-			"50",
-		),
-		pipe.Sort(pipe.Descending(pipe.Numeric(1))),
-		pipe.WriteLines(os.Stdout),
-	)
-	// Output:
-	// 100
-	// 50
-	// 20
-}
-
 func ExampleSort() {
 	pipe.Run(
 		pipe.Echo("banana", "apple", "cheese", "apple"),
@@ -272,45 +222,10 @@ func ExampleSort() {
 	// banana
 	// cheese
 }
-func ExampleSort_twoTextColumns() {
-	pipe.Run(
-		pipe.Echo(
-			"2 green bananas",
-			"3 red apples",
-			"4 yellow bananas",
-			"5 brown pears",
-			"6 green apples",
-		),
-		pipe.Sort(pipe.Textual(2), pipe.Textual(3)),
-		pipe.WriteLines(os.Stdout),
-	)
-	// Output:
-	// 5 brown pears
-	// 6 green apples
-	// 2 green bananas
-	// 3 red apples
-	// 4 yellow bananas
-}
 
-func ExampleSort_twoNumericColumns() {
-	pipe.Run(
-		pipe.Echo(
-			"1970 12",
-			"1970 6",
-			"1950 6",
-			"1980 9",
-		),
-		pipe.Sort(pipe.Numeric(1), pipe.Numeric(2)),
-		pipe.WriteLines(os.Stdout),
-	)
-	// Output:
-	// 1950 6
-	// 1970 6
-	// 1970 12
-	// 1980 9
-}
-
-func ExampleSort_mixedColumns() {
+func ExampleSort_multipleColumns() {
+	// Sort numerically by column 1. Break ties by sorting
+	// lexicographically by column 2.
 	pipe.Run(
 		pipe.Echo(
 			"1970 march",
@@ -318,7 +233,7 @@ func ExampleSort_mixedColumns() {
 			"1950 june",
 			"1980 sep",
 		),
-		pipe.Sort(pipe.Numeric(1), pipe.Textual(2)),
+		pipe.Sort().Num(1).Text(2),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
@@ -326,6 +241,74 @@ func ExampleSort_mixedColumns() {
 	// 1970 feb
 	// 1970 march
 	// 1980 sep
+}
+
+func ExampleSorter_Num() {
+	pipe.Run(
+		pipe.Echo(
+			"a 100",
+			"b 20",
+			"c notanumber", // Will sort last since column 2 is not a number
+			"d",            // Will sort earliest since column 2 is missing
+		),
+		pipe.Sort().Num(2),
+		pipe.WriteLines(os.Stdout),
+	)
+	// Output:
+	// d
+	// b 20
+	// a 100
+	// c notanumber
+}
+
+func ExampleSorter_NumDecreasing() {
+	pipe.Run(
+		pipe.Echo(
+			"a 100",
+			"b 20",
+			"c notanumber",
+			"d",
+		),
+		pipe.Sort().NumDecreasing(2),
+		pipe.WriteLines(os.Stdout),
+	)
+	// Output:
+	// c notanumber
+	// a 100
+	// b 20
+	// d
+}
+
+func ExampleSorter_Text() {
+	pipe.Run(
+		pipe.Echo(
+			"10 bananas",
+			"20 apples",
+			"30", // Will sort first since column 2 is missing
+		),
+		pipe.Sort().Text(2),
+		pipe.WriteLines(os.Stdout),
+	)
+	// Output:
+	// 30
+	// 20 apples
+	// 10 bananas
+}
+
+func ExampleSorter_TextDecreasing() {
+	pipe.Run(
+		pipe.Echo(
+			"10 bananas",
+			"20 apples",
+			"30", // Will sort first since column 2 is missing
+		),
+		pipe.Sort().TextDecreasing(2),
+		pipe.WriteLines(os.Stdout),
+	)
+	// Output:
+	// 10 bananas
+	// 20 apples
+	// 30
 }
 
 func ExampleReverse() {

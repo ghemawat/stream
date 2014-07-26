@@ -6,9 +6,24 @@ import (
 	"unicode"
 )
 
-// SortComparer is a function type that compares a and b and returns -1 if
+// Sorter is a Filter that sorts its input items by a sequence of
+// sort keys.  If two items compare equal by all specified sort keys
+// (this always happens if no sort keys are specified), the items
+// are compared lexicographically.
+type Sorter struct {
+	cmp []sortComparer
+}
+
+// Sort returns a filter that sorts its input items. By default, the
+// filter sorts items lexicographically. However this can be adjusted
+// by calling methods like Num, Text that add sorting keys to the filter.
+func Sort() *Sorter {
+	return &Sorter{}
+}
+
+// sortComparer is a function type that compares a and b and returns -1 if
 // a occurs before b, +1 if a occurs after b, 0 otherwise.  See Sort.
-type SortComparer func(a, b string) int
+type sortComparer func(a, b string) int
 
 // column(s, n) returns 0,x where x is the nth column (1-based) in s,
 // or -1,"" if s does not have n columns.  A zero column number is
@@ -39,12 +54,11 @@ func column(s string, n int) (int, string) {
 	return -1, ""
 }
 
-// Textual returns a SortComparer that compares the nth column
-// lexicographically.  A string that does not contain an nth column
-// sorts before all strings that contain an nth column.  If n == 0,
-// the entire string is treated as one column.
-func Textual(n int) SortComparer {
-	return func(a, b string) int {
+// Text sets the next sort key to sort by column n in lexicographic
+// order. Column 0 means the entire string. Items that do not have
+// column n sort to the front.
+func (s *Sorter) Text(n int) *Sorter {
+	s.cmp = append(s.cmp, func(a, b string) int {
 		a1, a2 := column(a, n)
 		b1, b2 := column(b, n)
 		switch {
@@ -58,16 +72,23 @@ func Textual(n int) SortComparer {
 			return +1
 		}
 		return 0
-	}
+	})
+	return s
 }
 
-// Numeric returns a SortComparer that compares the nth column numerically.
-// A string that does not contain an nth column sorts before all strings
-// that contain an nth column. If the nth column is not a number, it
-// sorts after all strings that contain an nth column that is a number.
-// If n == 0, the entire string is treated as one column.
-func Numeric(n int) SortComparer {
-	return func(a, b string) int {
+// TextDecreasing sets the next sort key to sort by column n in
+// reverse lexicographic order. Column 0 means the entire
+// string. Items that do not have column n sort to the end.
+func (s *Sorter) TextDecreasing(n int) *Sorter {
+	return s.Text(n).flipLast()
+}
+
+// Num sets the next sort key to sort by column n in numeric
+// order. Column 0 means the entire string. Items that do not have
+// column n sort to the front.  Items whose column n is not a number
+// sort to the end.
+func (s *Sorter) Num(n int) *Sorter {
+	s.cmp = append(s.cmp, func(a, b string) int {
 		a1, a2 := column(a, n)
 		b1, b2 := column(b, n)
 		switch {
@@ -97,28 +118,36 @@ func Numeric(n int) SortComparer {
 			return +1
 		}
 		return 0
-	}
+	})
+	return s
 }
 
-// Descending returns a SortComparer that orders elements opposite of p.
-func Descending(p SortComparer) SortComparer {
-	return func(a, b string) int {
-		return p(b, a)
-	}
+// NumDecreasing sets the next sort key to sort by column n in reverse
+// numeric order. Column 0 means the entire string. Items that do not
+// have column n sort to the end.  Items whose column n is not a
+// number sort to the front.
+func (s *Sorter) NumDecreasing(n int) *Sorter {
+	return s.Num(n).flipLast()
 }
 
-// columns is an interface for  sorting by a sequence of SortComparers.
-type columns struct {
-	Data []string
-	Cmp  []SortComparer
+func (s *Sorter) flipLast() *Sorter {
+	last := s.cmp[len(s.cmp)-1]
+	s.cmp[len(s.cmp)-1] = func(a, b string) int { return last(b, a) }
+	return s
 }
 
-func (c columns) Len() int      { return len(c.Data) }
-func (c columns) Swap(i, j int) { c.Data[i], c.Data[j] = c.Data[j], c.Data[i] }
-func (c columns) Less(i, j int) bool {
-	a := c.Data[i]
-	b := c.Data[j]
-	for _, p := range c.Cmp {
+type sortState struct {
+	sorter *Sorter
+	data   []string
+	// TODO: precompute per-item splits.
+}
+
+func (s *sortState) Len() int      { return len(s.data) }
+func (s *sortState) Swap(i, j int) { s.data[i], s.data[j] = s.data[j], s.data[i] }
+func (s *sortState) Less(i, j int) bool {
+	a := s.data[i]
+	b := s.data[j]
+	for _, p := range s.sorter.cmp {
 		r := p(a, b)
 		if r != 0 {
 			return r < 0
@@ -127,17 +156,16 @@ func (c columns) Less(i, j int) bool {
 	return a < b
 }
 
-// Sort sorts its inputs by the specified sequence of comparers.
-func Sort(comparers ...SortComparer) Filter {
-	return FilterFunc(func(arg Arg) error {
-		cs := columns{Cmp: comparers}
-		for s := range arg.In {
-			cs.Data = append(cs.Data, s)
-		}
-		sort.Sort(cs)
-		for _, s := range cs.Data {
-			arg.Out <- s
-		}
-		return nil
-	})
+// Run implements the Filter interface: it sorts items by the specified
+// sorting keys.
+func (s *Sorter) Run(arg Arg) error {
+	state := &sortState{sorter: s}
+	for s := range arg.In {
+		state.data = append(state.data, s)
+	}
+	sort.Sort(state)
+	for _, s := range state.data {
+		arg.Out <- s
+	}
+	return nil
 }

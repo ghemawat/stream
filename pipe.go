@@ -54,6 +54,14 @@ type filterErrors struct {
 	errors []error
 }
 
+func (e *filterErrors) record(err error) {
+	if err != nil {
+		e.mu.Lock()
+		e.errors = append(e.errors, err)
+		e.mu.Unlock()
+	}
+}
+
 func (e *filterErrors) getError() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -79,6 +87,8 @@ type Arg struct {
 // Filter is a function that reads a sequence of strings from a
 // channel and produces a sequence on another channel. A Filter
 // returns nil on success, an error otherwise.
+//
+// A Filter must *not* close the Arg.Out channel.
 type Filter func(Arg) error
 
 // Sequence returns a filter that is the concatenation of all filter arguments.
@@ -133,14 +143,9 @@ func Output(filters ...Filter) ([]string, error) {
 }
 
 func runFilter(f Filter, arg Arg, e *filterErrors) {
-	err := f(arg)
+	e.record(f(arg))
 	close(arg.Out)
 	for _ = range arg.In { // Discard all unhandled input
-	}
-	if err != nil {
-		e.mu.Lock()
-		e.errors = append(e.errors, err)
-		e.mu.Unlock()
 	}
 }
 

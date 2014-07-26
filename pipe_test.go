@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"time"
 )
 
 func Example() {
@@ -193,23 +192,23 @@ func ExampleUniqWithCount() {
 	// 1 c
 }
 
-func ExampleParallelMap() {
+func ExampleParallel() {
 	pipe.Run(
 		pipe.Echo("hello", "there", "how", "are", "you?"),
-		pipe.ParallelMap(4, func(s string) string {
-			// Sleep some amount to ensure that ParalellMap
-			// implementation handles out of order results.
-			time.Sleep(10 * time.Duration(len(s)) * time.Millisecond)
-			return fmt.Sprintf("%d %s", len(s), s)
-		}),
+		pipe.Parallel(4,
+			pipe.Map(func(s string) string {
+				return fmt.Sprintf("%d %s", len(s), s)
+			}),
+		),
+		pipe.Sort(),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
+	// 3 are
+	// 3 how
+	// 4 you?
 	// 5 hello
 	// 5 there
-	// 3 how
-	// 3 are
-	// 4 you?
 }
 
 func ExampleSubstitute() {

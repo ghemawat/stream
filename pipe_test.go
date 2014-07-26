@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"regexp"
 )
 
 func Example() {
@@ -23,23 +22,9 @@ func Example() {
 }
 
 func Example_error() {
-	counter := pipe.FilterFunc(func(arg pipe.Arg) error {
-		re, err := regexp.Compile("[")
-		if err != nil {
-			return err
-		}
-		n := 1
-		for s := range arg.In {
-			if re.MatchString(s) {
-				n++
-			}
-		}
-		arg.Out <- fmt.Sprint(n)
-		return nil
-	})
 	err := pipe.Run(
 		pipe.Numbers(1, 100),
-		counter,
+		pipe.Grep("["), // Invalid regular expression
 		pipe.WriteLines(os.Stdout),
 	)
 	if err == nil {

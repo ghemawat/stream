@@ -12,7 +12,7 @@ import (
 // split into lines and the lines form the output of the filter (with
 // trailing newlines removed).
 func Command(command string, args ...string) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		cmd := exec.Command(command, args...)
 		input, err := cmd.StdinPipe()
 		if err != nil {
@@ -36,7 +36,7 @@ func Command(command string, args ...string) Filter {
 			return err
 		}
 		return cmd.Wait()
-	}
+	})
 }
 
 // Xargs executes "command args... items..." where items are the input
@@ -46,7 +46,7 @@ func Command(command string, args ...string) Filter {
 // split into lines and the lines form the output of the filter (with
 // trailing newlines removed).
 func Xargs(command string, args ...string) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		// Compute argument length limit per execution
 		const limitBytes = 4096 - 100 // Posix limit with some slop
 		baseBytes := len(command)
@@ -74,7 +74,7 @@ func Xargs(command string, args ...string) Filter {
 			return runCommand(arg, command, items...)
 		}
 		return nil
-	}
+	})
 }
 
 func runCommand(arg Arg, command string, args ...string) error {

@@ -9,17 +9,17 @@ import (
 // of the n copies is merged (in an unspecified order) and forms the
 // output of the Parallel filter.
 func Parallel(n int, f Filter) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		var e filterErrors
 		var wg sync.WaitGroup
 		wg.Add(n)
 		for i := 0; i < n; i++ {
 			go func() {
-				e.record(f(arg))
+				e.record(f.Run(arg))
 				wg.Done()
 			}()
 		}
 		wg.Wait()
 		return e.getError()
-	}
+	})
 }

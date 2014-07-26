@@ -10,7 +10,7 @@ import (
 // Cat emits each line from each named file in order. If no arguments
 // are specified, Cat copies its input to its output.
 func Cat(filenames ...string) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		if len(filenames) == 0 {
 			for s := range arg.In {
 				arg.Out <- s
@@ -28,7 +28,7 @@ func Cat(filenames ...string) Filter {
 			}
 		}
 		return nil
-	}
+	})
 }
 
 // WriteLines prints each input item s followed by a newline to
@@ -36,7 +36,7 @@ func Cat(filenames ...string) Filter {
 // can be used like the "tee" command, which can often be useful
 // for debugging.
 func WriteLines(writer io.Writer) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		for s := range arg.In {
 			if _, err := fmt.Fprintln(writer, s); err != nil {
 				return err
@@ -44,14 +44,14 @@ func WriteLines(writer io.Writer) Filter {
 			arg.Out <- s
 		}
 		return nil
-	}
+	})
 }
 
 // ReadLines emits each line found in reader.
 func ReadLines(reader io.Reader) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		return splitIntoLines(reader, arg)
-	}
+	})
 }
 
 func splitIntoLines(rd io.Reader, arg Arg) error {

@@ -8,7 +8,7 @@ import (
 func Grep(r string) Filter {
 	re, err := regexp.Compile(r)
 	if err != nil {
-		return func(Arg) error { return err }
+		return FilterFunc(func(Arg) error { return err })
 	}
 	return If(re.MatchString)
 }
@@ -17,7 +17,7 @@ func Grep(r string) Filter {
 func GrepNot(r string) Filter {
 	re, err := regexp.Compile(r)
 	if err != nil {
-		return func(Arg) error { return err }
+		return FilterFunc(func(Arg) error { return err })
 	}
 	return If(func(s string) bool { return !re.MatchString(s) })
 }
@@ -26,7 +26,7 @@ func GrepNot(r string) Filter {
 // an input item with replacement.  The replacement string can contain
 // $1, $2, etc. which represent submatches of r.
 func Substitute(r, replacement string) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		re, err := regexp.Compile(r)
 		if err != nil {
 			return err
@@ -35,5 +35,5 @@ func Substitute(r, replacement string) Filter {
 			arg.Out <- re.ReplaceAllString(s, replacement)
 		}
 		return nil
-	}
+	})
 }

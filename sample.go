@@ -7,7 +7,7 @@ import (
 
 // Sample picks n pseudo-randomly chosen input items.
 func Sample(n int) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		// Could speed this up by using Algorithm Z from Vitter.
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		reservoir := make([]string, 0, n)
@@ -25,5 +25,5 @@ func Sample(n int) Filter {
 			arg.Out <- s
 		}
 		return nil
-	}
+	})
 }

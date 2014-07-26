@@ -2,9 +2,8 @@
 Package pipe provides filters that can be chained together in a manner
 similar to Unix pipelines.
 
-Each filter is a function that takes as input a sequence of
-strings (read from a channel) and produces as output a sequence of
-strings (written to a channel).
+Each filter takes as input a sequence of strings (read from a channel)
+and produces as output a sequence of strings (written to a channel).
 
 Filters can be chained together (e.g., via the Run function), the
 output of one filter is fed as input to the next filter.  The empty
@@ -18,9 +17,9 @@ print two lines to standard output:
 	)
 
 An application can implement its own filters easily. For example,
-repeat(n) returns a filter that repeats every input n times.
+Repeat(n) returns a filter that repeats every input n times.
 
-	func Repeat(n int) Filter {
+	func Repeat(n int) FilterFunc {
 		return func(arg pipe.Arg) error {
 			for s := range arg.In {
 				for i := 0; i < n; i++ {
@@ -36,10 +35,8 @@ repeat(n) returns a filter that repeats every input n times.
 		Repeat(10),
 	)
 
-Note that Repeat is not a Filter since it needs to accept the
-parameter n. Instead, it returns a Filter.  This convention is
-followed throughout this library: all filtering functionality is
-provided by functions that return a Filter.
+Note that Repeat returns a FilterFunc, which is a common implementation
+of the Filter interface.
 */
 package pipe
 
@@ -71,11 +68,11 @@ func (e *filterErrors) getError() error {
 	case 1:
 		return e.errors[0]
 	default:
-		return fmt.Errorf("pipe.Filter errors: %s", e.errors)
+		return fmt.Errorf("pipe errors: %s", e.errors)
 	}
 }
 
-// Arg contains the data passed to a Filter. Arg.In is a channel that
+// Arg contains the data passed to Filter.Run. Arg.In is a channel that
 // produces the input to the filter, and Arg.Out is a channel that
 // receives the output from the filter.
 type Arg struct {
@@ -84,17 +81,28 @@ type Arg struct {
 	dummy bool // To allow later expansion
 }
 
-// Filter is a function that reads a sequence of strings from a
-// channel and produces a sequence on another channel. A Filter
-// returns nil on success, an error otherwise.
-//
-// A Filter must *not* close the Arg.Out channel.
-type Filter func(Arg) error
+// The Filter interface represents a process that takes as input a
+// sequence of strings from a channel and produces a sequence on
+// another channel.
+type Filter interface {
+	// Run reads a sequence of items from Arg.In and produces a
+	// sequence of items on Arg.Out.  Run returns nil on success,
+	// an error otherwise.  Run must *not* close the Arg.Out
+	// channel.
+	Run(Arg) error
+}
+
+// FilterFunc is an adapter type that allows the use of ordinary
+// functions as Filters.  If f is a function with the appropriate
+// signature, FilterFunc(f) is a Filter that calls f.
+type FilterFunc func(Arg) error
+
+func (f FilterFunc) Run(arg Arg) error { return f(arg) }
 
 // Sequence returns a filter that is the concatenation of all filter arguments.
 // The output of a filter is fed as input to the next filter.
 func Sequence(filters ...Filter) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		e := &filterErrors{}
 		in := arg.In
 		for _, f := range filters {
@@ -106,7 +114,7 @@ func Sequence(filters ...Filter) Filter {
 			arg.Out <- s
 		}
 		return e.getError()
-	}
+	})
 }
 
 // Run executes the sequence of filters and discards all output.
@@ -143,7 +151,7 @@ func Output(filters ...Filter) ([]string, error) {
 }
 
 func runFilter(f Filter, arg Arg, e *filterErrors) {
-	e.record(f(arg))
+	e.record(f.Run(arg))
 	close(arg.Out)
 	for _ = range arg.In { // Discard all unhandled input
 	}
@@ -151,49 +159,49 @@ func runFilter(f Filter, arg Arg, e *filterErrors) {
 
 // Echo emits items.
 func Echo(items ...string) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		for _, s := range items {
 			arg.Out <- s
 		}
 		return nil
-	}
+	})
 }
 
 // Numbers emits the integers x..y
 func Numbers(x, y int) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		for i := x; i <= y; i++ {
 			arg.Out <- fmt.Sprintf("%d", i)
 		}
 		return nil
-	}
+	})
 }
 
 // Map calls fn(x) for every item x and yields the outputs of the fn calls.
 func Map(fn func(string) string) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		for s := range arg.In {
 			arg.Out <- fn(s)
 		}
 		return nil
-	}
+	})
 }
 
 // If emits every input x for which fn(x) is true.
 func If(fn func(string) bool) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		for s := range arg.In {
 			if fn(s) {
 				arg.Out <- s
 			}
 		}
 		return nil
-	}
+	})
 }
 
 // Uniq squashes adjacent identical items in arg.In into a single output.
 func Uniq() Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		first := true
 		last := ""
 		for s := range arg.In {
@@ -204,13 +212,13 @@ func Uniq() Filter {
 			first = false
 		}
 		return nil
-	}
+	})
 }
 
 // UniqWithCount squashes adjacent identical items in arg.In into a single
 // output prefixed with the count of identical items.
 func UniqWithCount() Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		current := ""
 		count := 0
 		for s := range arg.In {
@@ -227,12 +235,12 @@ func UniqWithCount() Filter {
 			arg.Out <- fmt.Sprintf("%d %s", count, current)
 		}
 		return nil
-	}
+	})
 }
 
 // Reverse yields items in the reverse of the order it received them.
 func Reverse() Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		var data []string
 		for s := range arg.In {
 			data = append(data, s)
@@ -241,12 +249,12 @@ func Reverse() Filter {
 			arg.Out <- data[i]
 		}
 		return nil
-	}
+	})
 }
 
 // First yields the first n items that it receives.
 func First(n int) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		emitted := 0
 		for s := range arg.In {
 			if emitted < n {
@@ -255,12 +263,12 @@ func First(n int) Filter {
 			}
 		}
 		return nil
-	}
+	})
 }
 
 // DropFirst yields all items except for the first n items that it receives.
 func DropFirst(n int) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		emitted := 0
 		for s := range arg.In {
 			if emitted >= n {
@@ -269,12 +277,12 @@ func DropFirst(n int) Filter {
 			emitted++
 		}
 		return nil
-	}
+	})
 }
 
 // Last yields the last n items that it receives.
 func Last(n int) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		var buf []string
 		for s := range arg.In {
 			buf = append(buf, s)
@@ -286,12 +294,12 @@ func Last(n int) Filter {
 			arg.Out <- s
 		}
 		return nil
-	}
+	})
 }
 
 // DropLast yields all items except for the last n items that it receives.
 func DropLast(n int) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		var buf []string
 		for s := range arg.In {
 			buf = append(buf, s)
@@ -301,20 +309,20 @@ func DropLast(n int) Filter {
 			}
 		}
 		return nil
-	}
+	})
 }
 
 // NumberLines prefixes its item with its index in the input sequence
 // (starting at 1).
 func NumberLines() Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		line := 1
 		for s := range arg.In {
 			arg.Out <- fmt.Sprintf("%5d %s", line, s)
 			line++
 		}
 		return nil
-	}
+	})
 }
 
 // Slice emits s[startOffset:endOffset] for each input item s.  Note
@@ -322,7 +330,7 @@ func NumberLines() Filter {
 // offsets are numbered starting at zero, and the end offset is not
 // included in the output.
 func Slice(startOffset, endOffset int) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		for s := range arg.In {
 			if len(s) > endOffset {
 				s = s[:endOffset]
@@ -335,7 +343,7 @@ func Slice(startOffset, endOffset int) Filter {
 			arg.Out <- s
 		}
 		return nil
-	}
+	})
 }
 
 // Columns splits each item into columns and yields the concatenation
@@ -343,7 +351,7 @@ func Slice(startOffset, endOffset int) Filter {
 // starting at 1.  If a column number is bigger than the number of columns
 // in an item, it is skipped.
 func Columns(columns ...int) Filter {
-	return func(arg Arg) error {
+	return FilterFunc(func(arg Arg) error {
 		for _, c := range columns {
 			if c <= 0 {
 				return fmt.Errorf("pipe.Columns: invalid column number %d", c)
@@ -362,5 +370,5 @@ func Columns(columns ...int) Filter {
 			arg.Out <- result
 		}
 		return nil
-	}
+	})
 }

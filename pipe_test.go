@@ -23,7 +23,7 @@ func Example() {
 }
 
 func Example_error() {
-	counter := func(arg pipe.Arg) error {
+	counter := pipe.FilterFunc(func(arg pipe.Arg) error {
 		re, err := regexp.Compile("[")
 		if err != nil {
 			return err
@@ -36,7 +36,7 @@ func Example_error() {
 		}
 		arg.Out <- fmt.Sprint(n)
 		return nil
-	}
+	})
 	err := pipe.Run(
 		pipe.Numbers(1, 100),
 		counter,

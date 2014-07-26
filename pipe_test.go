@@ -540,15 +540,25 @@ func ExampleCommand_withError() {
 }
 
 func ExampleXargs() {
-	err := pipe.Run(
+	pipe.Run(
 		pipe.Numbers(1, 5),
 		pipe.Xargs("echo"),
 		pipe.WriteLines(os.Stdout),
 	)
-	fmt.Println("error:", err)
 	// Output:
 	// 1 2 3 4 5
-	// error: <nil>
+}
+
+func ExampleXargsFilter_LimitArgs() {
+	pipe.Run(
+		pipe.Numbers(1, 5),
+		pipe.Xargs("echo").LimitArgs(2),
+		pipe.WriteLines(os.Stdout),
+	)
+	// Output:
+	// 1 2
+	// 3 4
+	// 5
 }
 
 func ExampleXargs_splitArguments() {

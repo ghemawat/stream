@@ -85,11 +85,11 @@ type Arg struct {
 // sequence of strings from a channel and produces a sequence on
 // another channel.
 type Filter interface {
-	// Run reads a sequence of items from Arg.In and produces a
+	// RunFilter reads a sequence of items from Arg.In and produces a
 	// sequence of items on Arg.Out.  Run returns nil on success,
 	// an error otherwise.  Run must *not* close the Arg.Out
 	// channel.
-	Run(Arg) error
+	RunFilter(Arg) error
 }
 
 // FilterFunc is an adapter type that allows the use of ordinary
@@ -97,7 +97,7 @@ type Filter interface {
 // signature, FilterFunc(f) is a Filter that calls f.
 type FilterFunc func(Arg) error
 
-func (f FilterFunc) Run(arg Arg) error { return f(arg) }
+func (f FilterFunc) RunFilter(arg Arg) error { return f(arg) }
 
 // Sequence returns a filter that is the concatenation of all filter arguments.
 // The output of a filter is fed as input to the next filter.
@@ -151,7 +151,7 @@ func Output(filters ...Filter) ([]string, error) {
 }
 
 func runFilter(f Filter, arg Arg, e *filterErrors) {
-	e.record(f.Run(arg))
+	e.record(f.RunFilter(arg))
 	close(arg.Out)
 	for _ = range arg.In { // Discard all unhandled input
 	}

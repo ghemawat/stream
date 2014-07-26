@@ -17,8 +17,8 @@ type Sorter struct {
 // Sort returns a filter that sorts its input items. By default, the
 // filter sorts items lexicographically. However this can be adjusted
 // by calling methods like Num, Text that add sorting keys to the filter.
-func Sort() *Sorter {
-	return &Sorter{}
+func Sort() Sorter {
+	return Sorter{}
 }
 
 // sortComparer compares a and b and returns -1 if a occurs before b,
@@ -57,8 +57,8 @@ func column(s string, n int) (int, string) {
 // Text sets the next sort key to sort by column n in lexicographic
 // order. Column 0 means the entire string. Items that do not have
 // column n sort to the front.
-func (s *Sorter) Text(n int) *Sorter {
-	s.cmp = append(s.cmp, func(a, b string) int {
+func (s Sorter) Text(n int) Sorter {
+	return s.add(func(a, b string) int {
 		a1, a2 := column(a, n)
 		b1, b2 := column(b, n)
 		switch {
@@ -73,13 +73,12 @@ func (s *Sorter) Text(n int) *Sorter {
 		}
 		return 0
 	})
-	return s
 }
 
 // TextDecreasing sets the next sort key to sort by column n in
 // reverse lexicographic order. Column 0 means the entire
 // string. Items that do not have column n sort to the end.
-func (s *Sorter) TextDecreasing(n int) *Sorter {
+func (s Sorter) TextDecreasing(n int) Sorter {
 	return s.Text(n).flipLast()
 }
 
@@ -87,8 +86,8 @@ func (s *Sorter) TextDecreasing(n int) *Sorter {
 // order. Column 0 means the entire string. Items that do not have
 // column n sort to the front.  Items whose column n is not a number
 // sort to the end.
-func (s *Sorter) Num(n int) *Sorter {
-	s.cmp = append(s.cmp, func(a, b string) int {
+func (s Sorter) Num(n int) Sorter {
+	return s.add(func(a, b string) int {
 		a1, a2 := column(a, n)
 		b1, b2 := column(b, n)
 		switch {
@@ -119,27 +118,33 @@ func (s *Sorter) Num(n int) *Sorter {
 		}
 		return 0
 	})
-	return s
 }
 
 // NumDecreasing sets the next sort key to sort by column n in reverse
 // numeric order. Column 0 means the entire string. Items that do not
 // have column n sort to the end.  Items whose column n is not a
 // number sort to the front.
-func (s *Sorter) NumDecreasing(n int) *Sorter {
+func (s Sorter) NumDecreasing(n int) Sorter {
 	return s.Num(n).flipLast()
 }
 
+func (s Sorter) add(cmp sortComparer) Sorter {
+	// Do not append in place because caller may end up copying
+	// one Sorter to another and supplying different keys to them.
+	s.cmp = append(append([]sortComparer(nil), s.cmp...), cmp)
+	return s
+}
+
 // flipLast reverses the comparison order for the last sort key.
-func (s *Sorter) flipLast() *Sorter {
+func (s Sorter) flipLast() Sorter {
 	last := s.cmp[len(s.cmp)-1]
 	s.cmp[len(s.cmp)-1] = func(a, b string) int { return last(b, a) }
 	return s
 }
 
 type sortState struct {
-	sorter *Sorter
-	data   []string
+	cmp  []sortComparer
+	data []string
 }
 
 func (s sortState) Len() int      { return len(s.data) }
@@ -147,7 +152,7 @@ func (s sortState) Swap(i, j int) { s.data[i], s.data[j] = s.data[j], s.data[i] 
 func (s sortState) Less(i, j int) bool {
 	a := s.data[i]
 	b := s.data[j]
-	for _, cmp := range s.sorter.cmp {
+	for _, cmp := range s.cmp {
 		r := cmp(a, b)
 		if r != 0 {
 			return r < 0
@@ -156,10 +161,10 @@ func (s sortState) Less(i, j int) bool {
 	return a < b
 }
 
-// Run implements the Filter interface: it sorts items by the specified
+// RunFilter implements the Filter interface: it sorts items by the specified
 // sorting keys.
-func (s *Sorter) Run(arg Arg) error {
-	state := sortState{sorter: s}
+func (s Sorter) RunFilter(arg Arg) error {
+	state := sortState{s.cmp, nil}
 	for s := range arg.In {
 		state.data = append(state.data, s)
 	}

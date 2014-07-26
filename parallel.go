@@ -15,7 +15,7 @@ func Parallel(n int, f Filter) Filter {
 		wg.Add(n)
 		for i := 0; i < n; i++ {
 			go func() {
-				e.record(f.Run(arg))
+				e.record(f.RunFilter(arg))
 				wg.Done()
 			}()
 		}

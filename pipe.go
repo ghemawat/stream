@@ -102,6 +102,9 @@ func (f FilterFunc) RunFilter(arg Arg) error { return f(arg) }
 // Sequence returns a filter that is the concatenation of all filter arguments.
 // The output of a filter is fed as input to the next filter.
 func Sequence(filters ...Filter) Filter {
+	if len(filters) == 1 {
+		return filters[0]
+	}
 	return FilterFunc(func(arg Arg) error {
 		e := &filterErrors{}
 		in := arg.In

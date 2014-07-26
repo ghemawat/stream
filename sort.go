@@ -21,8 +21,8 @@ func Sort() *Sorter {
 	return &Sorter{}
 }
 
-// sortComparer is a function type that compares a and b and returns -1 if
-// a occurs before b, +1 if a occurs after b, 0 otherwise.  See Sort.
+// sortComparer compares a and b and returns -1 if a occurs before b,
+// +1 if a occurs after b, 0 otherwise.
 type sortComparer func(a, b string) int
 
 // column(s, n) returns 0,x where x is the nth column (1-based) in s,
@@ -130,6 +130,7 @@ func (s *Sorter) NumDecreasing(n int) *Sorter {
 	return s.Num(n).flipLast()
 }
 
+// flipLast reverses the comparison order for the last sort key.
 func (s *Sorter) flipLast() *Sorter {
 	last := s.cmp[len(s.cmp)-1]
 	s.cmp[len(s.cmp)-1] = func(a, b string) int { return last(b, a) }
@@ -139,16 +140,15 @@ func (s *Sorter) flipLast() *Sorter {
 type sortState struct {
 	sorter *Sorter
 	data   []string
-	// TODO: precompute per-item splits.
 }
 
-func (s *sortState) Len() int      { return len(s.data) }
-func (s *sortState) Swap(i, j int) { s.data[i], s.data[j] = s.data[j], s.data[i] }
-func (s *sortState) Less(i, j int) bool {
+func (s sortState) Len() int      { return len(s.data) }
+func (s sortState) Swap(i, j int) { s.data[i], s.data[j] = s.data[j], s.data[i] }
+func (s sortState) Less(i, j int) bool {
 	a := s.data[i]
 	b := s.data[j]
-	for _, p := range s.sorter.cmp {
-		r := p(a, b)
+	for _, cmp := range s.sorter.cmp {
+		r := cmp(a, b)
 		if r != 0 {
 			return r < 0
 		}
@@ -159,7 +159,7 @@ func (s *sortState) Less(i, j int) bool {
 // Run implements the Filter interface: it sorts items by the specified
 // sorting keys.
 func (s *Sorter) Run(arg Arg) error {
-	state := &sortState{sorter: s}
+	state := sortState{sorter: s}
 	for s := range arg.In {
 		state.data = append(state.data, s)
 	}

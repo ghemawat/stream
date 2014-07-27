@@ -1,24 +1,27 @@
 /*
 Package pipe provides filters that can be chained together in a manner
-similar to Unix pipelines.
+similar to Unix pipelines.  A simple example that prints all go files
+in the current directory:
+	pipe.Run(
+		pipe.Find(pipe.Files, "."),
+		pipe.Grep(`\.go$`),
+		pipe.WriteLines(os.Stdout),
+	)
+Run is passed a sequence of filters that are chained together: the
+output of one filter is fed as input to the next filter.  The empty
+input is passed to the first filter.
+
+pipe.Run is just one way to execute filters.  Others are pipe.Output
+(returns the output of the last filter as a []string), and
+pipe.ForEach (executes a supplied function for every output item).
+
+User defined filters
 
 Each filter takes as input a sequence of strings (read from a channel)
 and produces as output a sequence of strings (written to a channel).
-
-Filters can be chained together (e.g., via the Run function), the
-output of one filter is fed as input to the next filter.  The empty
-input is passed to the first filter. The following sequence will
-print two lines to standard output:
-
-	err := pipe.Run(
-		pipe.Echo("hello", "world"),
-		pipe.Reverse(),
-		pipe.WriteLines(os.Stdout),
-	)
-
-An application can implement its own filters easily. For example,
-Repeat(n) returns a filter that repeats every input n times.
-
+The pipe package provides a bunch of useful filters.  Applications can
+define their own filters easily. For example, here is a filter that
+repeats every input n times:
 	func Repeat(n int) FilterFunc {
 		return func(arg pipe.Arg) error {
 			for s := range arg.In {
@@ -29,14 +32,47 @@ Repeat(n) returns a filter that repeats every input n times.
 			return nil
 		}
 	}
+	pipe.Run(
+		pipe.Items("hello", "world"),
+		Repeat(2),
+		pipe.WriteLines(os.Stdout),
+	)
+The output will be:
+	hello
+	hello
+	world
+	world
+Note that Repeat returns a FilterFunc, a function type that implements the
+Filter interface. This is a common implementation pattern: many simple filters
+can be expressed as a single function of type FilterFunc.
+
+Error handling
+
+Filter execution can result in errors.  These are returned from pipe
+functions normally.  For example, the following program will panic.
+	err := pipe.Run(
+		pipe.Items("hello", "world"),
+		pipe.Grep("["), // Invalid regular expression
+		pipe.WriteLines(os.Stdout),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+Parameterized Filters
+
+FilterFunc is an appropriate type to use for most filters like Repeat
+above.  However for some filters, dynamic customization is
+appropriate.  Such filters provide their own implementation of the
+Filter interface with extra methods. For example, pipe.Sort provides
+extra methods that can be used to control how items are sorted:
 
 	pipe.Run(
-		pipe.Echo("hello"),
-		Repeat(10),
+		pipe.Command("ls", "-l"),
+		pipe.Sort().Num(5),  // Sort numerically by fifth column
+		pipe.WriteLines(os.Stdout),
 	)
 
-Note that Repeat returns a FilterFunc, which is a common implementation
-of the Filter interface.
 */
 package pipe
 
@@ -160,8 +196,8 @@ func runFilter(f Filter, arg Arg, e *filterErrors) {
 	}
 }
 
-// Echo emits items.
-func Echo(items ...string) Filter {
+// Items emits items.
+func Items(items ...string) Filter {
 	return FilterFunc(func(arg Arg) error {
 		for _, s := range items {
 			arg.Out <- s

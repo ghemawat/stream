@@ -128,7 +128,7 @@ func (s Sorter) NumDecreasing(n int) Sorter {
 	return s.Num(n).flipLast()
 }
 
-// By adds a sort key to sort by the output of the less function.
+// By adds a sort key to sort by the output of the specified less function.
 func (s Sorter) By(less func(a, b string) bool) Sorter {
 	return s.add(func(a, b string) int {
 		if less(a, b) {

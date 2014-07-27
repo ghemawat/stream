@@ -8,31 +8,6 @@ import (
 	"os"
 )
 
-func Example() {
-	err := pipe.Run(
-		pipe.Find(pipe.FILES, "."),
-		pipe.Grep(`pipe.*\.go$`),
-		pipe.WriteLines(os.Stdout),
-	)
-	fmt.Println("error:", err)
-	// Output:
-	// pipe.go
-	// pipe_test.go
-	// error: <nil>
-}
-
-func Example_error() {
-	err := pipe.Run(
-		pipe.Numbers(1, 100),
-		pipe.Grep("["), // Invalid regular expression
-		pipe.WriteLines(os.Stdout),
-	)
-	if err == nil {
-		fmt.Println("did not catch error")
-	}
-	// Output:
-}
-
 func ExampleSequence() {
 	pipe.ForEach(pipe.Sequence(
 		pipe.Numbers(1, 25),
@@ -70,7 +45,7 @@ func ExampleOutput() {
 
 func ExampleRun() {
 	pipe.Run(
-		pipe.Echo("line 1", "line 2"),
+		pipe.Items("line 1", "line 2"),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
@@ -78,9 +53,9 @@ func ExampleRun() {
 	// line 2
 }
 
-func ExampleEcho() {
+func ExampleItems() {
 	pipe.Run(
-		pipe.Echo("hello", "world"),
+		pipe.Items("hello", "world"),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
@@ -102,7 +77,7 @@ func ExampleNumbers() {
 
 func ExampleMap() {
 	pipe.Run(
-		pipe.Echo("hello", "there", "how", "are", "you?"),
+		pipe.Items("hello", "there", "how", "are", "you?"),
 		pipe.Map(func(s string) string {
 			return fmt.Sprintf("%d %s", len(s), s)
 		}),
@@ -154,7 +129,7 @@ func ExampleGrepNot() {
 
 func ExampleUniq() {
 	pipe.Run(
-		pipe.Echo("a", "b", "b", "c", "b"),
+		pipe.Items("a", "b", "b", "c", "b"),
 		pipe.Uniq(),
 		pipe.WriteLines(os.Stdout),
 	)
@@ -167,7 +142,7 @@ func ExampleUniq() {
 
 func ExampleUniqWithCount() {
 	pipe.Run(
-		pipe.Echo("a", "b", "b", "c"),
+		pipe.Items("a", "b", "b", "c"),
 		pipe.UniqWithCount(),
 		pipe.WriteLines(os.Stdout),
 	)
@@ -179,7 +154,7 @@ func ExampleUniqWithCount() {
 
 func ExampleParallel() {
 	pipe.Run(
-		pipe.Echo("hello", "there", "how", "are", "you?"),
+		pipe.Items("hello", "there", "how", "are", "you?"),
 		pipe.Parallel(4,
 			pipe.Map(func(s string) string {
 				return fmt.Sprintf("%d %s", len(s), s)
@@ -212,7 +187,7 @@ func ExampleSubstitute() {
 
 func ExampleSort() {
 	pipe.Run(
-		pipe.Echo("banana", "apple", "cheese", "apple"),
+		pipe.Items("banana", "apple", "cheese", "apple"),
 		pipe.Sort(),
 		pipe.WriteLines(os.Stdout),
 	)
@@ -227,7 +202,7 @@ func ExampleSort_multipleColumns() {
 	// Sort numerically by column 1. Break ties by sorting
 	// lexicographically by column 2.
 	pipe.Run(
-		pipe.Echo(
+		pipe.Items(
 			"1970 march",
 			"1970 feb",
 			"1950 june",
@@ -245,7 +220,7 @@ func ExampleSort_multipleColumns() {
 
 func ExampleSorter_Num() {
 	pipe.Run(
-		pipe.Echo(
+		pipe.Items(
 			"a 100",
 			"b 20",
 			"c notanumber", // Will sort last since column 2 is not a number
@@ -263,7 +238,7 @@ func ExampleSorter_Num() {
 
 func ExampleSorter_NumDecreasing() {
 	pipe.Run(
-		pipe.Echo(
+		pipe.Items(
 			"a 100",
 			"b 20",
 			"c notanumber",
@@ -281,7 +256,7 @@ func ExampleSorter_NumDecreasing() {
 
 func ExampleSorter_Text() {
 	pipe.Run(
-		pipe.Echo(
+		pipe.Items(
 			"10 bananas",
 			"20 apples",
 			"30", // Will sort first since column 2 is missing
@@ -297,7 +272,7 @@ func ExampleSorter_Text() {
 
 func ExampleSorter_TextDecreasing() {
 	pipe.Run(
-		pipe.Echo(
+		pipe.Items(
 			"10 bananas",
 			"20 apples",
 			"30", // Will sort first since column 2 is missing
@@ -313,7 +288,7 @@ func ExampleSorter_TextDecreasing() {
 
 func ExampleSorter_By() {
 	pipe.Run(
-		pipe.Echo("bananas", "apples", "pears"),
+		pipe.Items("bananas", "apples", "pears"),
 		pipe.Sort().By(func(a, b string) bool { return len(a) < len(b) }),
 		pipe.WriteLines(os.Stdout),
 	)
@@ -325,7 +300,7 @@ func ExampleSorter_By() {
 
 func ExampleReverse() {
 	pipe.Run(
-		pipe.Echo("a", "b"),
+		pipe.Items("a", "b"),
 		pipe.Reverse(),
 		pipe.WriteLines(os.Stdout),
 	)
@@ -395,7 +370,7 @@ func ExampleDropLast() {
 
 func ExampleNumberLines() {
 	pipe.Run(
-		pipe.Echo("a", "b"),
+		pipe.Items("a", "b"),
 		pipe.NumberLines(),
 		pipe.WriteLines(os.Stdout),
 	)
@@ -406,7 +381,7 @@ func ExampleNumberLines() {
 
 func ExampleSlice() {
 	pipe.Run(
-		pipe.Echo("hello", "world."),
+		pipe.Items("hello", "world."),
 		pipe.Slice(2, 5),
 		pipe.WriteLines(os.Stdout),
 	)
@@ -417,7 +392,7 @@ func ExampleSlice() {
 
 func ExampleColumns() {
 	pipe.Run(
-		pipe.Echo("hello world"),
+		pipe.Items("hello world"),
 		pipe.Columns(2, 3, 1),
 		pipe.WriteLines(os.Stdout),
 	)

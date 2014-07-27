@@ -15,6 +15,19 @@ pipe.Run is just one way to execute filters.  Others are pipe.Output
 (returns the output of the last filter as a []string), and
 pipe.ForEach (executes a supplied function for every output item).
 
+Error handling
+
+Filter execution can result in errors.  These are returned from pipe
+functions normally.  For example, the following program will panic.
+	err := pipe.Run(
+		pipe.Items("hello", "world"),
+		pipe.Grep("["), // Invalid regular expression
+		pipe.WriteLines(os.Stdout),
+	)
+	if err != nil {
+		panic(err)
+	}
+
 User defined filters
 
 Each filter takes as input a sequence of strings (read from a channel)
@@ -22,7 +35,7 @@ and produces as output a sequence of strings (written to a channel).
 The pipe package provides a bunch of useful filters.  Applications can
 define their own filters easily. For example, here is a filter that
 repeats every input n times:
-	func Repeat(n int) FilterFunc {
+	func Repeat(n int) pipe.FilterFunc {
 		return func(arg pipe.Arg) error {
 			for s := range arg.In {
 				for i := 0; i < n; i++ {
@@ -46,19 +59,6 @@ Note that Repeat returns a FilterFunc, a function type that implements the
 Filter interface. This is a common implementation pattern: many simple filters
 can be expressed as a single function of type FilterFunc.
 
-Error handling
-
-Filter execution can result in errors.  These are returned from pipe
-functions normally.  For example, the following program will panic.
-	err := pipe.Run(
-		pipe.Items("hello", "world"),
-		pipe.Grep("["), // Invalid regular expression
-		pipe.WriteLines(os.Stdout),
-	)
-	if err != nil {
-		panic(err)
-	}
-
 Parameterized Filters
 
 FilterFunc is an appropriate type to use for most filters like Repeat
@@ -69,7 +69,7 @@ extra methods that can be used to control how items are sorted:
 
 	pipe.Run(
 		pipe.Command("ls", "-l"),
-		pipe.Sort().Num(5),  // Sort numerically by fifth column
+		pipe.Sort().Num(5),  // Sort numerically by size (column 5)
 		pipe.WriteLines(os.Stdout),
 	)
 
@@ -130,6 +130,8 @@ type FilterFunc func(Arg) error
 
 func (f FilterFunc) RunFilter(arg Arg) error { return f(arg) }
 
+const channelBuffer = 1000
+
 // Sequence returns a filter that is the concatenation of all filter arguments.
 // The output of a filter is fed as input to the next filter.
 func Sequence(filters ...Filter) Filter {
@@ -140,7 +142,7 @@ func Sequence(filters ...Filter) Filter {
 		e := &filterErrors{}
 		in := arg.In
 		for _, f := range filters {
-			c := make(chan string, 10000)
+			c := make(chan string, channelBuffer)
 			go runFilter(f, Arg{In: in, Out: c}, e)
 			in = c
 		}
@@ -162,7 +164,7 @@ func Run(filters ...Filter) error {
 func ForEach(filter Filter, fn func(s string)) error {
 	in := make(chan string, 0)
 	close(in)
-	out := make(chan string, 10000)
+	out := make(chan string, channelBuffer)
 	e := &filterErrors{}
 	go runFilter(filter, Arg{In: in, Out: out}, e)
 	for s := range out {
@@ -205,7 +207,7 @@ func Items(items ...string) Filter {
 func Numbers(x, y int) Filter {
 	return FilterFunc(func(arg Arg) error {
 		for i := x; i <= y; i++ {
-			arg.Out <- fmt.Sprintf("%d", i)
+			arg.Out <- fmt.Sprint(i)
 		}
 		return nil
 	})

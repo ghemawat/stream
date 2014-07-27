@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"testing"
 )
 
 func ExampleSequence() {
@@ -522,4 +523,24 @@ func ExampleXargs_splitArguments() {
 	)
 	// Output:
 	// 3
+}
+
+func BenchmarkSingle(b *testing.B) {
+	pipe.Run(pipe.Numbers(1, b.N))
+}
+
+func BenchmarkFive(b *testing.B) {
+	f := pipe.FilterFunc(func(arg pipe.Arg) error {
+		for s := range arg.In {
+			arg.Out <- s
+		}
+		return nil
+	})
+	pipe.Run(
+		pipe.Numbers(1, b.N),
+		f,
+		f,
+		f,
+		f,
+	)
 }

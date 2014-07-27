@@ -86,11 +86,11 @@ func (f *FindFilter) RunFilter(arg Arg) error {
 		if e != nil {
 			return e
 		}
-		if f.shouldYield(s) {
-			arg.Out <- n
-		}
 		if f.skipdir != nil && f.skipdir[n] && s.Mode().IsDir() {
 			return filepath.SkipDir
+		}
+		if f.shouldYield(s) {
+			arg.Out <- n
 		}
 		return nil
 	})

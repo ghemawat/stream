@@ -122,8 +122,8 @@ type Arg struct {
 // another channel.
 type Filter interface {
 	// RunFilter reads a sequence of items from Arg.In and produces a
-	// sequence of items on Arg.Out.  Run returns nil on success,
-	// an error otherwise.  Run must *not* close the Arg.Out
+	// sequence of items on Arg.Out.  RunFilter returns nil on success,
+	// an error otherwise.  RunFilter must *not* close the Arg.Out
 	// channel.
 	RunFilter(Arg) error
 }

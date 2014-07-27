@@ -31,16 +31,10 @@ func ExampleForEach() {
 }
 
 func ExampleOutput() {
-	result, err := pipe.Output(pipe.Numbers(1, 3))
-	for _, s := range result {
-		fmt.Println(s)
-	}
-	fmt.Println("error:", err)
+	out, err := pipe.Output(pipe.Numbers(1, 3))
+	fmt.Println(out, err)
 	// Output:
-	// 1
-	// 2
-	// 3
-	// error: <nil>
+	// [1 2 3] <nil>
 }
 
 func ExampleRun() {

@@ -1,9 +1,9 @@
 /*
 Package pipe provides filters that can be chained together in a manner
 similar to Unix pipelines.  A simple example that prints all go files
-in the current directory:
+under the current directory:
 	pipe.Run(
-		pipe.Find(pipe.Files, "."),
+		pipe.Find("."),
 		pipe.Grep(`\.go$`),
 		pipe.WriteLines(os.Stdout),
 	)

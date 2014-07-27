@@ -396,7 +396,7 @@ func ExampleColumns() {
 
 func ExampleFind() {
 	pipe.Run(
-		pipe.Find(pipe.FILES, "."),
+		pipe.Find(".").Files(),
 		pipe.Grep("pipe"),
 		pipe.WriteLines(os.Stdout),
 	)
@@ -405,18 +405,19 @@ func ExampleFind() {
 	// pipe_test.go
 }
 
-func ExampleFind_dirs() {
+func ExampleFindFilter_SkipDir() {
 	pipe.Run(
-		pipe.Find(pipe.DIRS, "."),
-		pipe.GrepNot("git"),
+		pipe.Find(".").SkipDir(".git"),
+		pipe.Grep("x"),
 		pipe.WriteLines(os.Stdout),
 	)
 	// Output:
-	// .
+	// regexp.go
+	// xargs.go
 }
 
 func ExampleFind_error() {
-	err := pipe.Run(pipe.Find(pipe.ALL, "/no_such_dir"))
+	err := pipe.Run(pipe.Find("/no_such_dir"))
 	if err == nil {
 		fmt.Println("pipe.Find did not return expected error")
 	}

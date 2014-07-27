@@ -83,14 +83,16 @@ import (
 
 // filterErrors records errors accumulated during the execution of a filter.
 type filterErrors struct {
-	mu     sync.Mutex
-	errors []error
+	mu  sync.Mutex
+	err error
 }
 
 func (e *filterErrors) record(err error) {
 	if err != nil {
 		e.mu.Lock()
-		e.errors = append(e.errors, err)
+		if e.err == nil {
+			e.err = err
+		}
 		e.mu.Unlock()
 	}
 }
@@ -98,14 +100,7 @@ func (e *filterErrors) record(err error) {
 func (e *filterErrors) getError() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	switch len(e.errors) {
-	case 0:
-		return nil
-	case 1:
-		return e.errors[0]
-	default:
-		return fmt.Errorf("pipe errors: %s", e.errors)
-	}
+	return e.err
 }
 
 // Arg contains the data passed to Filter.Run. Arg.In is a channel that

@@ -18,13 +18,13 @@ type XargsFilter struct {
 // command line length restrictions).  The standard output of the
 // execution(s) is split into lines and the lines form the output of
 // the filter (with trailing newlines removed).
-func Xargs(command string, args ...string) XargsFilter {
+func Xargs(command string, args ...string) *XargsFilter {
 	// Compute length of command+args
 	base := len(command)
 	for _, a := range args {
 		base += 1 + len(a)
 	}
-	return XargsFilter{
+	return &XargsFilter{
 		command:    command,
 		args:       args,
 		limitArgs:  4096,
@@ -35,14 +35,14 @@ func Xargs(command string, args ...string) XargsFilter {
 // LimitArgs adjusts x so that no more than n input items are passed to
 // a single command execution.  If not called, an unspecified number
 // of input items may be handled via a single command execution.
-func (x XargsFilter) LimitArgs(n int) XargsFilter {
+func (x *XargsFilter) LimitArgs(n int) *XargsFilter {
 	x.limitArgs = n
 	return x
 }
 
 // RunFilter implements the Filter interface: it reads a sequence of items
 // from arg.In and passes them as arguments to "command args...".
-func (x XargsFilter) RunFilter(arg Arg) error {
+func (x *XargsFilter) RunFilter(arg Arg) error {
 	items := append([]string(nil), x.args...)
 	added := 0 // Bytes added to items since last execution.
 	for s := range arg.In {

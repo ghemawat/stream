@@ -1,7 +1,7 @@
 package stream_test
 
 import (
-	"github.com/ghemawat/pipe"
+	"github.com/ghemawat/stream"
 
 	"bytes"
 	"fmt"

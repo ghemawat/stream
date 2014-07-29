@@ -11,7 +11,7 @@ Run is passed a sequence of filters that are chained together: the
 output of one filter is fed as input to the next filter.  The empty
 input is passed to the first filter.
 
-pipe.Run is just one way to execute filters.  Others are pipe.Output
+pipe.Run is just one way to execute filters.  Others are pipe.Contents
 (returns the output of the last filter as a []string), and
 pipe.ForEach (executes a supplied function for every output item).
 
@@ -173,9 +173,9 @@ func ForEach(filter Filter, fn func(s string)) error {
 	return e.getError()
 }
 
-// Output returns a slice that contains all items that are
+// Contents returns a slice that contains all items that are
 // the output of filters.
-func Output(filters ...Filter) ([]string, error) {
+func Contents(filters ...Filter) ([]string, error) {
 	var result []string
 	err := ForEach(Sequence(filters...), func(s string) {
 		result = append(result, s)

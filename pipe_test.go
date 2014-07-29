@@ -31,8 +31,8 @@ func ExampleForEach() {
 	// 12345
 }
 
-func ExampleOutput() {
-	out, err := pipe.Output(pipe.Numbers(1, 3))
+func ExampleContents() {
+	out, err := pipe.Contents(pipe.Numbers(1, 3))
 	fmt.Println(out, err)
 	// Output:
 	// [1 2 3] <nil>

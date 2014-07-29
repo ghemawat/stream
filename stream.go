@@ -2,14 +2,17 @@
 Package stream provides filters that can be chained together in a manner
 similar to Unix pipelines.  A simple example that prints all go files
 under the current directory:
+
 	stream.Run(
 		stream.Find("."),
 		stream.Grep(`\.go$`),
 		stream.WriteLines(os.Stdout),
 	)
-Run is passed a sequence of filters that are chained together: the
-output of one filter is fed as input to the next filter.  The empty
-input is passed to the first filter.
+
+Run is passed a sequence of filters that are chained together
+(stream.Find, stream.Grep, stream.WriteLines are filters). The empty
+input is passed to the first filter. The output of one filter is fed
+as input to the next filter.
 
 stream.Run is just one way to execute filters.  Others are stream.Contents
 (returns the output of the last filter as a []string), and
@@ -35,6 +38,7 @@ and produces as output a sequence of strings (written to a channel).
 The stream package provides a bunch of useful filters.  Applications can
 define their own filters easily. For example, here is a filter that
 repeats every input n times:
+
 	func Repeat(n int) stream.FilterFunc {
 		return func(arg stream.Arg) error {
 			for s := range arg.In {
@@ -45,16 +49,20 @@ repeats every input n times:
 			return nil
 		}
 	}
+
 	stream.Run(
 		stream.Items("hello", "world"),
 		Repeat(2),
 		stream.WriteLines(os.Stdout),
 	)
+
 The output will be:
+
 	hello
 	hello
 	world
 	world
+
 Note that Repeat returns a FilterFunc, a function type that implements the
 Filter interface. This is a common implementation pattern: many simple filters
 can be expressed as a single function of type FilterFunc.

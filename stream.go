@@ -83,9 +83,9 @@ extra methods that can be used to control how items are sorted:
 
 Acknowledgments
 
-The interface of this package is inspired by and quite similar to
-the http://labix.org/pipe package. Users may wish to consider that package
-in case it fits their needs better.
+The interface of this package is inspired by the http://labix.org/pipe
+package. Users may wish to consider that package in case it fits their
+needs better.
 */
 package stream
 

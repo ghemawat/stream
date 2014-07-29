@@ -1,4 +1,4 @@
-package pipe_test
+package stream_test
 
 import (
 	"github.com/ghemawat/pipe"
@@ -10,9 +10,9 @@ import (
 )
 
 func ExampleSequence() {
-	pipe.ForEach(pipe.Sequence(
-		pipe.Numbers(1, 25),
-		pipe.Grep("3"),
+	stream.ForEach(stream.Sequence(
+		stream.Numbers(1, 25),
+		stream.Grep("3"),
 	), func(s string) { fmt.Println(s) })
 	// Output:
 	// 3
@@ -21,7 +21,7 @@ func ExampleSequence() {
 }
 
 func ExampleForEach() {
-	err := pipe.ForEach(pipe.Numbers(1, 5), func(s string) {
+	err := stream.ForEach(stream.Numbers(1, 5), func(s string) {
 		fmt.Print(s)
 	})
 	if err != nil {
@@ -32,16 +32,16 @@ func ExampleForEach() {
 }
 
 func ExampleContents() {
-	out, err := pipe.Contents(pipe.Numbers(1, 3))
+	out, err := stream.Contents(stream.Numbers(1, 3))
 	fmt.Println(out, err)
 	// Output:
 	// [1 2 3] <nil>
 }
 
 func ExampleRun() {
-	pipe.Run(
-		pipe.Items("line 1", "line 2"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("line 1", "line 2"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// line 1
@@ -49,9 +49,9 @@ func ExampleRun() {
 }
 
 func ExampleItems() {
-	pipe.Run(
-		pipe.Items("hello", "world"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("hello", "world"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// hello
@@ -59,9 +59,9 @@ func ExampleItems() {
 }
 
 func ExampleNumbers() {
-	pipe.Run(
-		pipe.Numbers(2, 5),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(2, 5),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 2
@@ -71,12 +71,12 @@ func ExampleNumbers() {
 }
 
 func ExampleMap() {
-	pipe.Run(
-		pipe.Items("hello", "there", "how", "are", "you?"),
-		pipe.Map(func(s string) string {
+	stream.Run(
+		stream.Items("hello", "there", "how", "are", "you?"),
+		stream.Map(func(s string) string {
 			return fmt.Sprintf("%d %s", len(s), s)
 		}),
-		pipe.WriteLines(os.Stdout),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 5 hello
@@ -87,10 +87,10 @@ func ExampleMap() {
 }
 
 func ExampleIf() {
-	pipe.Run(
-		pipe.Numbers(1, 12),
-		pipe.If(func(s string) bool { return len(s) > 1 }),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 12),
+		stream.If(func(s string) bool { return len(s) > 1 }),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 10
@@ -99,10 +99,10 @@ func ExampleIf() {
 }
 
 func ExampleGrep() {
-	pipe.Run(
-		pipe.Numbers(1, 12),
-		pipe.Grep(".."),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 12),
+		stream.Grep(".."),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 10
@@ -111,10 +111,10 @@ func ExampleGrep() {
 }
 
 func ExampleGrepNot() {
-	pipe.Run(
-		pipe.Numbers(1, 12),
-		pipe.GrepNot("^.$"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 12),
+		stream.GrepNot("^.$"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 10
@@ -123,10 +123,10 @@ func ExampleGrepNot() {
 }
 
 func ExampleUniq() {
-	pipe.Run(
-		pipe.Items("a", "b", "b", "c", "b"),
-		pipe.Uniq(),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("a", "b", "b", "c", "b"),
+		stream.Uniq(),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// a
@@ -136,10 +136,10 @@ func ExampleUniq() {
 }
 
 func ExampleUniqWithCount() {
-	pipe.Run(
-		pipe.Items("a", "b", "b", "c"),
-		pipe.UniqWithCount(),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("a", "b", "b", "c"),
+		stream.UniqWithCount(),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1 a
@@ -148,15 +148,15 @@ func ExampleUniqWithCount() {
 }
 
 func ExampleParallel() {
-	pipe.Run(
-		pipe.Items("hello", "there", "how", "are", "you?"),
-		pipe.Parallel(4,
-			pipe.Map(func(s string) string {
+	stream.Run(
+		stream.Items("hello", "there", "how", "are", "you?"),
+		stream.Parallel(4,
+			stream.Map(func(s string) string {
 				return fmt.Sprintf("%d %s", len(s), s)
 			}),
 		),
-		pipe.Sort(),
-		pipe.WriteLines(os.Stdout),
+		stream.Sort(),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 3 are
@@ -167,10 +167,10 @@ func ExampleParallel() {
 }
 
 func ExampleSubstitute() {
-	pipe.Run(
-		pipe.Numbers(1, 5),
-		pipe.Substitute("(3)", "$1$1"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 5),
+		stream.Substitute("(3)", "$1$1"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1
@@ -181,10 +181,10 @@ func ExampleSubstitute() {
 }
 
 func ExampleSort() {
-	pipe.Run(
-		pipe.Items("banana", "apple", "cheese", "apple"),
-		pipe.Sort(),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("banana", "apple", "cheese", "apple"),
+		stream.Sort(),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// apple
@@ -196,15 +196,15 @@ func ExampleSort() {
 func ExampleSort_multipleColumns() {
 	// Sort numerically by column 1. Break ties by sorting
 	// lexicographically by column 2.
-	pipe.Run(
-		pipe.Items(
+	stream.Run(
+		stream.Items(
 			"1970 march",
 			"1970 feb",
 			"1950 june",
 			"1980 sep",
 		),
-		pipe.Sort().Num(1).Text(2),
-		pipe.WriteLines(os.Stdout),
+		stream.Sort().Num(1).Text(2),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1950 june
@@ -214,15 +214,15 @@ func ExampleSort_multipleColumns() {
 }
 
 func ExampleSorter_Num() {
-	pipe.Run(
-		pipe.Items(
+	stream.Run(
+		stream.Items(
 			"a 100",
 			"b 20",
 			"c notanumber", // Will sort last since column 2 is not a number
 			"d",            // Will sort earliest since column 2 is missing
 		),
-		pipe.Sort().Num(2),
-		pipe.WriteLines(os.Stdout),
+		stream.Sort().Num(2),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// d
@@ -232,15 +232,15 @@ func ExampleSorter_Num() {
 }
 
 func ExampleSorter_NumDecreasing() {
-	pipe.Run(
-		pipe.Items(
+	stream.Run(
+		stream.Items(
 			"a 100",
 			"b 20",
 			"c notanumber",
 			"d",
 		),
-		pipe.Sort().NumDecreasing(2),
-		pipe.WriteLines(os.Stdout),
+		stream.Sort().NumDecreasing(2),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// c notanumber
@@ -250,14 +250,14 @@ func ExampleSorter_NumDecreasing() {
 }
 
 func ExampleSorter_Text() {
-	pipe.Run(
-		pipe.Items(
+	stream.Run(
+		stream.Items(
 			"10 bananas",
 			"20 apples",
 			"30", // Will sort first since column 2 is missing
 		),
-		pipe.Sort().Text(2),
-		pipe.WriteLines(os.Stdout),
+		stream.Sort().Text(2),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 30
@@ -266,14 +266,14 @@ func ExampleSorter_Text() {
 }
 
 func ExampleSorter_TextDecreasing() {
-	pipe.Run(
-		pipe.Items(
+	stream.Run(
+		stream.Items(
 			"10 bananas",
 			"20 apples",
 			"30", // Will sort first since column 2 is missing
 		),
-		pipe.Sort().TextDecreasing(2),
-		pipe.WriteLines(os.Stdout),
+		stream.Sort().TextDecreasing(2),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 10 bananas
@@ -282,10 +282,10 @@ func ExampleSorter_TextDecreasing() {
 }
 
 func ExampleSorter_By() {
-	pipe.Run(
-		pipe.Items("bananas", "apples", "pears"),
-		pipe.Sort().By(func(a, b string) bool { return len(a) < len(b) }),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("bananas", "apples", "pears"),
+		stream.Sort().By(func(a, b string) bool { return len(a) < len(b) }),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// pears
@@ -294,10 +294,10 @@ func ExampleSorter_By() {
 }
 
 func ExampleReverse() {
-	pipe.Run(
-		pipe.Items("a", "b"),
-		pipe.Reverse(),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("a", "b"),
+		stream.Reverse(),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// b
@@ -305,19 +305,19 @@ func ExampleReverse() {
 }
 
 func ExampleSample() {
-	pipe.Run(
-		pipe.Numbers(100, 200),
-		pipe.Sample(4),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(100, 200),
+		stream.Sample(4),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output not checked since it is non-deterministic.
 }
 
 func ExampleFirst() {
-	pipe.Run(
-		pipe.Numbers(1, 10),
-		pipe.First(3),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 10),
+		stream.First(3),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1
@@ -326,10 +326,10 @@ func ExampleFirst() {
 }
 
 func ExampleLast() {
-	pipe.Run(
-		pipe.Numbers(1, 10),
-		pipe.Last(2),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 10),
+		stream.Last(2),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 9
@@ -337,10 +337,10 @@ func ExampleLast() {
 }
 
 func ExampleDropFirst() {
-	pipe.Run(
-		pipe.Numbers(1, 10),
-		pipe.DropFirst(8),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 10),
+		stream.DropFirst(8),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 9
@@ -348,10 +348,10 @@ func ExampleDropFirst() {
 }
 
 func ExampleDropLast() {
-	pipe.Run(
-		pipe.Numbers(1, 10),
-		pipe.DropLast(3),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 10),
+		stream.DropLast(3),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1
@@ -364,10 +364,10 @@ func ExampleDropLast() {
 }
 
 func ExampleNumberLines() {
-	pipe.Run(
-		pipe.Items("a", "b"),
-		pipe.NumberLines(),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("a", "b"),
+		stream.NumberLines(),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	//     1 a
@@ -375,10 +375,10 @@ func ExampleNumberLines() {
 }
 
 func ExampleSlice() {
-	pipe.Run(
-		pipe.Items("hello", "world."),
-		pipe.Slice(2, 5),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("hello", "world."),
+		stream.Slice(2, 5),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// llo
@@ -386,31 +386,31 @@ func ExampleSlice() {
 }
 
 func ExampleColumns() {
-	pipe.Run(
-		pipe.Items("hello world"),
-		pipe.Columns(2, 3, 1),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Items("hello world"),
+		stream.Columns(2, 3, 1),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// world hello
 }
 
 func ExampleFind() {
-	pipe.Run(
-		pipe.Find(".").Files(),
-		pipe.Grep("pipe"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Find(".").Files(),
+		stream.Grep("stream"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
-	// pipe.go
-	// pipe_test.go
+	// stream.go
+	// stream_test.go
 }
 
 func ExampleFindFilter_SkipDir() {
-	pipe.Run(
-		pipe.Find(".").SkipDir(".git"),
-		pipe.Grep("x"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Find(".").SkipDir(".git"),
+		stream.Grep("x"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// regexp.go
@@ -418,27 +418,27 @@ func ExampleFindFilter_SkipDir() {
 }
 
 func ExampleFind_error() {
-	err := pipe.Run(pipe.Find("/no_such_dir"))
+	err := stream.Run(stream.Find("/no_such_dir"))
 	if err == nil {
-		fmt.Println("pipe.Find did not return expected error")
+		fmt.Println("stream.Find did not return expected error")
 	}
 	// Output:
 }
 
 func ExampleCat() {
-	pipe.Run(
-		pipe.Cat("pipe_test.go"),
-		pipe.Grep("^func ExampleCat"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Cat("stream_test.go"),
+		stream.Grep("^func ExampleCat"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// func ExampleCat() {
 }
 
 func ExampleWriteLines() {
-	pipe.Run(
-		pipe.Numbers(1, 3),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 3),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1
@@ -447,10 +447,10 @@ func ExampleWriteLines() {
 }
 
 func ExampleReadLines() {
-	pipe.Run(
-		pipe.ReadLines(bytes.NewBufferString("the\nquick\nbrown\nfox\n")),
-		pipe.Sort(),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.ReadLines(bytes.NewBufferString("the\nquick\nbrown\nfox\n")),
+		stream.Sort(),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// brown
@@ -460,30 +460,30 @@ func ExampleReadLines() {
 }
 
 func ExampleCommand() {
-	pipe.Run(
-		pipe.Numbers(1, 100),
-		pipe.Command("wc", "-l"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 100),
+		stream.Command("wc", "-l"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 100
 }
 
 func ExampleCommand_outputOnly() {
-	pipe.Run(
-		pipe.Command("find", ".", "-type", "f", "-print"),
-		pipe.Grep(`^\./pipe.*\.go$`),
-		pipe.Sort(),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Command("find", ".", "-type", "f", "-print"),
+		stream.Grep(`^\./stream.*\.go$`),
+		stream.Sort(),
+		stream.WriteLines(os.Stdout),
 	)
 
 	// Output:
-	// ./pipe.go
-	// ./pipe_test.go
+	// ./stream.go
+	// ./stream_test.go
 }
 
 func ExampleCommand_withError() {
-	err := pipe.Run(pipe.Command("no_such_command"))
+	err := stream.Run(stream.Command("no_such_command"))
 	if err == nil {
 		fmt.Println("execution of missing command succeeded unexpectedly")
 	}
@@ -491,20 +491,20 @@ func ExampleCommand_withError() {
 }
 
 func ExampleXargs() {
-	pipe.Run(
-		pipe.Numbers(1, 5),
-		pipe.Xargs("echo"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 5),
+		stream.Xargs("echo"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1 2 3 4 5
 }
 
 func ExampleXargsFilter_LimitArgs() {
-	pipe.Run(
-		pipe.Numbers(1, 5),
-		pipe.Xargs("echo").LimitArgs(2),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 5),
+		stream.Xargs("echo").LimitArgs(2),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 1 2
@@ -515,29 +515,29 @@ func ExampleXargsFilter_LimitArgs() {
 func ExampleXargs_splitArguments() {
 	// Xargs should split the long list of arguments into
 	// three executions to keep command length below 4096.
-	pipe.Run(
-		pipe.Numbers(1, 2000),
-		pipe.Xargs("echo"),
-		pipe.Command("wc", "-l"),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Numbers(1, 2000),
+		stream.Xargs("echo"),
+		stream.Command("wc", "-l"),
+		stream.WriteLines(os.Stdout),
 	)
 	// Output:
 	// 3
 }
 
 func BenchmarkSingle(b *testing.B) {
-	pipe.Run(pipe.Numbers(1, b.N))
+	stream.Run(stream.Numbers(1, b.N))
 }
 
 func BenchmarkFive(b *testing.B) {
-	f := pipe.FilterFunc(func(arg pipe.Arg) error {
+	f := stream.FilterFunc(func(arg stream.Arg) error {
 		for s := range arg.In {
 			arg.Out <- s
 		}
 		return nil
 	})
-	pipe.Run(
-		pipe.Numbers(1, b.N),
+	stream.Run(
+		stream.Numbers(1, b.N),
 		f,
 		f,
 		f,

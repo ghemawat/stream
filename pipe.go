@@ -1,28 +1,28 @@
 /*
-Package pipe provides filters that can be chained together in a manner
+Package stream provides filters that can be chained together in a manner
 similar to Unix pipelines.  A simple example that prints all go files
 under the current directory:
-	pipe.Run(
-		pipe.Find("."),
-		pipe.Grep(`\.go$`),
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Find("."),
+		stream.Grep(`\.go$`),
+		stream.WriteLines(os.Stdout),
 	)
 Run is passed a sequence of filters that are chained together: the
 output of one filter is fed as input to the next filter.  The empty
 input is passed to the first filter.
 
-pipe.Run is just one way to execute filters.  Others are pipe.Contents
+stream.Run is just one way to execute filters.  Others are stream.Contents
 (returns the output of the last filter as a []string), and
-pipe.ForEach (executes a supplied function for every output item).
+stream.ForEach (executes a supplied function for every output item).
 
 Error handling
 
-Filter execution can result in errors.  These are returned from pipe
+Filter execution can result in errors.  These are returned from stream
 functions normally.  For example, the following program will panic.
-	err := pipe.Run(
-		pipe.Items("hello", "world"),
-		pipe.Grep("["), // Invalid regular expression
-		pipe.WriteLines(os.Stdout),
+	err := stream.Run(
+		stream.Items("hello", "world"),
+		stream.Grep("["), // Invalid regular expression
+		stream.WriteLines(os.Stdout),
 	)
 	if err != nil {
 		panic(err)
@@ -32,11 +32,11 @@ User defined filters
 
 Each filter takes as input a sequence of strings (read from a channel)
 and produces as output a sequence of strings (written to a channel).
-The pipe package provides a bunch of useful filters.  Applications can
+The stream package provides a bunch of useful filters.  Applications can
 define their own filters easily. For example, here is a filter that
 repeats every input n times:
-	func Repeat(n int) pipe.FilterFunc {
-		return func(arg pipe.Arg) error {
+	func Repeat(n int) stream.FilterFunc {
+		return func(arg stream.Arg) error {
 			for s := range arg.In {
 				for i := 0; i < n; i++ {
 					arg.Out <- s
@@ -45,10 +45,10 @@ repeats every input n times:
 			return nil
 		}
 	}
-	pipe.Run(
-		pipe.Items("hello", "world"),
+	stream.Run(
+		stream.Items("hello", "world"),
 		Repeat(2),
-		pipe.WriteLines(os.Stdout),
+		stream.WriteLines(os.Stdout),
 	)
 The output will be:
 	hello
@@ -64,17 +64,17 @@ Parameterized Filters
 FilterFunc is an appropriate type to use for most filters like Repeat
 above.  However for some filters, dynamic customization is
 appropriate.  Such filters provide their own implementation of the
-Filter interface with extra methods. For example, pipe.Sort provides
+Filter interface with extra methods. For example, stream.Sort provides
 extra methods that can be used to control how items are sorted:
 
-	pipe.Run(
-		pipe.Command("ls", "-l"),
-		pipe.Sort().Num(5),  // Sort numerically by size (column 5)
-		pipe.WriteLines(os.Stdout),
+	stream.Run(
+		stream.Command("ls", "-l"),
+		stream.Sort().Num(5),  // Sort numerically by size (column 5)
+		stream.WriteLines(os.Stdout),
 	)
 
 */
-package pipe
+package stream
 
 import (
 	"fmt"
@@ -390,7 +390,7 @@ func Columns(columns ...int) Filter {
 	return FilterFunc(func(arg Arg) error {
 		for _, c := range columns {
 			if c <= 0 {
-				return fmt.Errorf("pipe.Columns: invalid column number %d", c)
+				return fmt.Errorf("stream.Columns: invalid column number %d", c)
 			}
 		}
 		for s := range arg.In {

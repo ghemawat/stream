@@ -39,13 +39,15 @@ func ExampleContents() {
 }
 
 func ExampleRun() {
-	stream.Run(
+	err := stream.Run(
 		stream.Items("line 1", "line 2"),
 		stream.WriteLines(os.Stdout),
 	)
+	fmt.Println("error:", err)
 	// Output:
 	// line 1
 	// line 2
+	// error: <nil>
 }
 
 func ExampleItems() {

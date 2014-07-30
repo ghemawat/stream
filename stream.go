@@ -301,66 +301,6 @@ func Reverse() Filter {
 	})
 }
 
-// First yields the first n items that it receives.
-func First(n int) Filter {
-	return FilterFunc(func(arg Arg) error {
-		emitted := 0
-		for s := range arg.In {
-			if emitted < n {
-				arg.Out <- s
-				emitted++
-			}
-		}
-		return nil
-	})
-}
-
-// DropFirst yields all items except for the first n items that it receives.
-func DropFirst(n int) Filter {
-	return FilterFunc(func(arg Arg) error {
-		emitted := 0
-		for s := range arg.In {
-			if emitted >= n {
-				arg.Out <- s
-			}
-			emitted++
-		}
-		return nil
-	})
-}
-
-// Last yields the last n items that it receives.
-func Last(n int) Filter {
-	return FilterFunc(func(arg Arg) error {
-		var buf []string
-		for s := range arg.In {
-			buf = append(buf, s)
-			if len(buf) > n {
-				buf = buf[1:]
-			}
-		}
-		for _, s := range buf {
-			arg.Out <- s
-		}
-		return nil
-	})
-}
-
-// DropLast yields all items except for the last n items that it receives.
-func DropLast(n int) Filter {
-	return FilterFunc(func(arg Arg) error {
-		var buf []string
-		for s := range arg.In {
-			buf = append(buf, s)
-			if len(buf) > n {
-				arg.Out <- buf[0]
-				buf = buf[1:]
-			}
-		}
-		return nil
-	})
-}
-
 // NumberLines prefixes its item with its index in the input sequence
 // (starting at 1).
 func NumberLines() Filter {

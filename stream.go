@@ -9,10 +9,11 @@ under the current directory:
 		stream.WriteLines(os.Stdout),
 	)
 
-Run is passed a sequence of filters that are chained together
-(stream.Find, stream.Grep, stream.WriteLines are filters). The empty
-input is passed to the first filter. The output of one filter is fed
-as input to the next filter.
+stream.Run is passed a list of filters that are chained together
+(stream.Find, stream.Grep, stream.WriteLines are filters).  Each
+filter takes as input a sequence of strings and produces a sequence of
+strings. The empty sequence is passed as input to the first
+filter. The output of one filter is fed as input to the next filter.
 
 stream.Run is just one way to execute filters.  Others are stream.Contents
 (returns the output of the last filter as a []string), and
@@ -22,14 +23,13 @@ Error handling
 
 Filter execution can result in errors.  These are returned from stream
 functions normally.  For example, the following program will panic.
+
 	err := stream.Run(
 		stream.Items("hello", "world"),
 		stream.Grep("["), // Invalid regular expression
 		stream.WriteLines(os.Stdout),
 	)
-	if err != nil {
-		panic(err)
-	}
+	// err will be non-nil
 
 User defined filters
 
@@ -67,7 +67,7 @@ Note that Repeat returns a FilterFunc, a function type that implements the
 Filter interface. This is a common implementation pattern: many simple filters
 can be expressed as a single function of type FilterFunc.
 
-Parameterized Filters
+Tunable Filters
 
 FilterFunc is an appropriate type to use for most filters like Repeat
 above.  However for some filters, dynamic customization is

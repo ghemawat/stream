@@ -22,7 +22,8 @@ stream.ForEach (executes a supplied function for every output item).
 Error handling
 
 Filter execution can result in errors.  These are returned from stream
-functions normally.  For example, the following program will panic.
+functions normally.  For example, the following call will return a
+non-nil error.
 
 	err := stream.Run(
 		stream.Items("hello", "world"),

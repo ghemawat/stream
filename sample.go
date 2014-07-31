@@ -14,14 +14,13 @@ func Sample(n int) Filter {
 		reservoir := make([]string, 0, n)
 		i := 0
 		for s := range arg.In {
-			switch {
-			case i < n:
+			if i < n {
 				reservoir = append(reservoir, s)
-			case r.Float32() < float32(n)/float32(i+1):
-				// TODO: Maybe use float64.  Or try
-				//   j := r.Intn(i+1)
-				//   if j < n { reservoir[j] = s }
-				reservoir[r.Intn(n)] = s
+			} else {
+				j := r.Intn(i + 1)
+				if j < n {
+					reservoir[j] = s
+				}
 			}
 			i++
 		}

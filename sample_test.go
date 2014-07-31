@@ -31,7 +31,6 @@ func TestSample(t *testing.T) {
 	const minExpected = expected * 0.85
 	const maxExpected = expected * 1.15
 	for i, n := range count {
-		//fmt.Printf("%8d %9d %5.3f\n", i, n, float64(n)/expected)
 		if n < minExpected || n > maxExpected {
 			t.Errorf("%d has %d samples; expected range [%f,%f]\n",
 				i, n, minExpected, maxExpected)

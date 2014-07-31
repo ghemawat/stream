@@ -30,16 +30,15 @@ func Command(command string, args ...string) Filter {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			for s := range arg.In {
 				_, ierr = fmt.Fprintln(input, s)
 				if ierr != nil {
 					input.Close()
-					wg.Done()
 					return
 				}
 			}
 			ierr = input.Close()
-			wg.Done()
 		}()
 		if err := splitIntoLines(output, arg); err != nil {
 			wg.Wait()

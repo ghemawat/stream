@@ -176,7 +176,7 @@ func Run(filters ...Filter) error {
 // ForEach calls fn(s) for every item s in the output of filter and
 // returns either nil, or any error reported by the execution of the filter.
 func ForEach(filter Filter, fn func(s string)) error {
-	in := make(chan string, 0)
+	in := make(chan string)
 	close(in)
 	out := make(chan string, channelBuffer)
 	e := &filterErrors{}
@@ -266,7 +266,7 @@ func Uniq() Filter {
 }
 
 // UniqWithCount squashes adjacent identical items in arg.In into a single
-// output prefixed with the count of identical items.
+// output prefixed with the count of identical items followed by a space.
 func UniqWithCount() Filter {
 	return FilterFunc(func(arg Arg) error {
 		current := ""
@@ -303,7 +303,7 @@ func Reverse() Filter {
 }
 
 // NumberLines prefixes its item with its index in the input sequence
-// (starting at 1).
+// (starting at 1) followed by a space.
 func NumberLines() Filter {
 	return FilterFunc(func(arg Arg) error {
 		line := 1
@@ -316,9 +316,9 @@ func NumberLines() Filter {
 }
 
 // Columns splits each item into columns and yields the concatenation
-// of the columns numbers passed as arguments.  Columns are numbered
-// starting at 1.  If a column number is bigger than the number of columns
-// in an item, it is skipped.
+// (separated by spaces) of the columns numbers passed as arguments.
+// Columns are numbered starting at 1.  If a column number is bigger
+// than the number of columns in an item, it is skipped.
 func Columns(columns ...int) Filter {
 	return FilterFunc(func(arg Arg) error {
 		for _, c := range columns {

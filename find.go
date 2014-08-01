@@ -8,77 +8,35 @@ import (
 // FindFilter is a filter that produces matching nodes under a filesystem
 // directory.
 type FindFilter struct {
-	dir                        string
-	seentype                   bool
-	files, dirs, symlinks, all bool
-	skipdir                    map[string]bool
+	dir       string
+	ifmode    func(os.FileMode) bool
+	skipdirif func(string) bool
 }
 
 // Find returns a filter that produces matching nodes under a
-// filesystem directory.  If no type constraining methods (Files,
-// Dirs, Symlinks) are called, all nodes are printed. Otherwise, just
-// nodes with a type corresponding to at least one of the called
-// methods are printed.
+// filesystem directory.  By default, the filter matches all types
+// of files (regular files, directories, symbolic links, etc.).
+// This behavior can be adjusted by calling FindFilter methods
+// before executing the filter.
 func Find(dir string) *FindFilter {
-	return &FindFilter{dir: dir}
-}
-
-// Files adjusts f so it matches all regular files.
-func (f *FindFilter) Files() *FindFilter {
-	f.seentype = true
-	f.files = true
-	return f
-}
-
-// Dirs adjusts f so it matches all directories.
-func (f *FindFilter) Dirs() *FindFilter {
-	f.seentype = true
-	f.dirs = true
-	return f
-}
-
-// Symlinks adjusts f so it matches all symbolic links.
-func (f *FindFilter) Symlinks() *FindFilter {
-	f.seentype = true
-	f.symlinks = true
-	return f
-}
-
-// All adjusts f so it matches all types of nodes.
-func (f *FindFilter) All() *FindFilter {
-	f.seentype = true
-	f.all = true
-	return f
-}
-
-// SkipDir adjusts f so that any node that is one of dirs or a
-// descendant of one of the dirs is skipped.
-func (f *FindFilter) SkipDir(dirs ...string) *FindFilter {
-	if f.skipdir == nil {
-		f.skipdir = make(map[string]bool)
+	return &FindFilter{
+		dir:       dir,
+		ifmode:    func(os.FileMode) bool { return true },
+		skipdirif: func(d string) bool { return false },
 	}
-	for _, d := range dirs {
-		f.skipdir[d] = true
-	}
+}
+
+// IfMode adjusts f so it only matches nodes for which fn(mode) returns true.
+func (f *FindFilter) IfMode(fn func(os.FileMode) bool) *FindFilter {
+	f.ifmode = fn
 	return f
 }
 
-func (f *FindFilter) shouldYield(s os.FileInfo) bool {
-	switch {
-	case !f.seentype:
-		// If no types are specified, match everything
-		return true
-	case f.all:
-		return true
-	case f.files && s.Mode().IsRegular():
-		return true
-	case f.dirs && s.Mode().IsDir():
-		return true
-	case f.symlinks && s.Mode()&os.ModeSymlink != 0:
-		return true
-	default:
-		return false
-	}
+// SkipDirIf adjusts f so that if fn(d) returns true for a directory d,
+// d and all of d's descendents are skipped.
+func (f *FindFilter) SkipDirIf(fn func(d string) bool) *FindFilter {
+	f.skipdirif = fn
+	return f
 }
 
 func (f *FindFilter) RunFilter(arg Arg) error {
@@ -86,10 +44,10 @@ func (f *FindFilter) RunFilter(arg Arg) error {
 		if e != nil {
 			return e
 		}
-		if f.skipdir != nil && f.skipdir[n] && s.Mode().IsDir() {
+		if s.Mode().IsDir() && f.skipdirif(n) {
 			return filepath.SkipDir
 		}
-		if f.shouldYield(s) {
+		if f.ifmode(s.Mode()) {
 			arg.Out <- n
 		}
 		return nil

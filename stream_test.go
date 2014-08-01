@@ -388,7 +388,7 @@ func ExampleColumns() {
 
 func ExampleFind() {
 	stream.Run(
-		stream.Find(".").Files(),
+		stream.Find(".").IfMode(os.FileMode.IsRegular),
 		stream.Grep("stream"),
 		stream.WriteLines(os.Stdout),
 	)
@@ -397,9 +397,9 @@ func ExampleFind() {
 	// stream_test.go
 }
 
-func ExampleFindFilter_SkipDir() {
+func ExampleFindFilter_SkipDirIf() {
 	stream.Run(
-		stream.Find(".").SkipDir(".git"),
+		stream.Find(".").SkipDirIf(func(d string) bool { return d == ".git" }),
 		stream.Grep("x"),
 		stream.WriteLines(os.Stdout),
 	)

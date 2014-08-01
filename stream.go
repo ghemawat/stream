@@ -315,27 +315,6 @@ func NumberLines() Filter {
 	})
 }
 
-// Slice emits s[startOffset:endOffset] for each input item s.  Note
-// that Slice follows Go conventions, and unlike the "cut" utility,
-// offsets are numbered starting at zero, and the end offset is not
-// included in the output.
-func Slice(startOffset, endOffset int) Filter {
-	return FilterFunc(func(arg Arg) error {
-		for s := range arg.In {
-			if len(s) > endOffset {
-				s = s[:endOffset]
-			}
-			if len(s) < startOffset {
-				s = ""
-			} else {
-				s = s[startOffset:]
-			}
-			arg.Out <- s
-		}
-		return nil
-	})
-}
-
 // Columns splits each item into columns and yields the concatenation
 // of the columns numbers passed as arguments.  Columns are numbered
 // starting at 1.  If a column number is bigger than the number of columns

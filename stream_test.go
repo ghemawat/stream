@@ -376,17 +376,6 @@ func ExampleNumberLines() {
 	//     2 b
 }
 
-func ExampleSlice() {
-	stream.Run(
-		stream.Items("hello", "world."),
-		stream.Slice(2, 5),
-		stream.WriteLines(os.Stdout),
-	)
-	// Output:
-	// llo
-	// rld
-}
-
 func ExampleColumns() {
 	stream.Run(
 		stream.Items("hello world"),

@@ -17,7 +17,7 @@ func TestSample(t *testing.T) {
 	for i := 0; i < iters; i++ {
 		s := stream.Sequence(
 			stream.Numbers(0, space-1),
-			stream.Sample(samples),
+			stream.SampleWithSeed(samples, int64(i)),
 		)
 		stream.ForEach(s, func(s string) {
 			num := -1 // Will cause panic below if Scan fails

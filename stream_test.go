@@ -315,6 +315,18 @@ func ExampleSample() {
 	// Output not checked since it is non-deterministic.
 }
 
+func ExampleSampleWithSeed() {
+	stream.Run(
+		stream.Numbers(1, 100),
+		stream.SampleWithSeed(2, 100),
+		stream.Sort().Num(1),
+		stream.WriteLines(os.Stdout),
+	)
+	// Output:
+	// 11
+	// 46
+}
+
 func ExampleFirst() {
 	stream.Run(
 		stream.Numbers(1, 10),

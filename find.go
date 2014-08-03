@@ -14,7 +14,9 @@ type FindFilter struct {
 }
 
 // Find returns a filter that produces matching nodes under a
-// filesystem directory.  By default, the filter matches all types
+// filesystem directory. The items yielded by the filter will be
+// prefixed by dir. E.g., if dir contains subdir/file, the filter
+// will yield dir/subdir/file. By default, the filter matches all types
 // of files (regular files, directories, symbolic links, etc.).
 // This behavior can be adjusted by calling FindFilter methods
 // before executing the filter.

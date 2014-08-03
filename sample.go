@@ -6,7 +6,7 @@ import (
 )
 
 // Sample picks n pseudo-randomly chosen input items.  Different executions
-// a Sample filter will chose different items.
+// of a Sample filter will chose different items.
 func Sample(n int) Filter {
 	return SampleWithSeed(n, time.Now().UnixNano())
 }

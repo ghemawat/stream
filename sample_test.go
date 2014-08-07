@@ -37,6 +37,7 @@ func doTest(t *testing.T, n, space, iters int, tolerance float64) {
 	}
 }
 
-func TestSample1(t *testing.T) { doTest(t, 1, 2, 10000, 0.01) }
-func TestSample2(t *testing.T) { doTest(t, 9, 10, 1000, 0.05) }
-func TestSample3(t *testing.T) { doTest(t, 50, 100, 1000, 0.15) }
+func TestSample_1of2(t *testing.T)    { doTest(t, 1, 2, 10000, 0.01) }
+func TestSample_9of10(t *testing.T)   { doTest(t, 9, 10, 1000, 0.05) }
+func TestSample_50of100(t *testing.T) { doTest(t, 50, 100, 1000, 0.15) }
+func TestSample_99of100(t *testing.T) { doTest(t, 99, 100, 100, 0.05) }

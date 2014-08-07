@@ -7,17 +7,16 @@ import (
 	"testing"
 )
 
-func TestSample(t *testing.T) {
-	// A weak test that Sample picks items evenly.
-	const space = 100  // Space of numbers to sample from
-	const samples = 50 // Number of samples drawn per run
-	const iters = 1000 // Number of runs
-
-	var count [space]int
+// doTest checks that Sample picks items evenly.  "n" samples are
+// drawn from a list of numbers of length "space".  This is repeated
+// "iters" times.  The number of times a particular number is drawn
+// should be within "tolerance" of the expected number.
+func doTest(t *testing.T, n, space, iters int, tolerance float64) {
+	count := make([]int, space)
 	for i := 0; i < iters; i++ {
 		s := stream.Sequence(
 			stream.Numbers(0, space-1),
-			stream.SampleWithSeed(samples, int64(i)),
+			stream.SampleWithSeed(n, int64(i)),
 		)
 		stream.ForEach(s, func(s string) {
 			num := -1 // Will cause panic below if Scan fails
@@ -27,13 +26,17 @@ func TestSample(t *testing.T) {
 	}
 
 	// Check that all counts are approximately equal.
-	const expected = (iters * samples) / space
-	const minExpected = expected * 0.85
-	const maxExpected = expected * 1.15
+	expected := (float64(iters) * float64(n)) / float64(space)
+	minExpected := expected * (1.0 - tolerance)
+	maxExpected := expected * (1.0 + tolerance)
 	for i, n := range count {
-		if n < minExpected || n > maxExpected {
+		if float64(n) < minExpected || float64(n) > maxExpected {
 			t.Errorf("%d has %d samples; expected range [%f,%f]\n",
 				i, n, minExpected, maxExpected)
 		}
 	}
 }
+
+func TestSample1(t *testing.T) { doTest(t, 1, 2, 10000, 0.01) }
+func TestSample2(t *testing.T) { doTest(t, 9, 10, 1000, 0.05) }
+func TestSample3(t *testing.T) { doTest(t, 50, 100, 1000, 0.15) }

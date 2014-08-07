@@ -142,6 +142,7 @@ type Filter interface {
 // signature, FilterFunc(f) is a Filter that calls f.
 type FilterFunc func(Arg) error
 
+// RunFilter calls this function. It implements the Filter interface.
 func (f FilterFunc) RunFilter(arg Arg) error { return f(arg) }
 
 const channelBuffer = 1000

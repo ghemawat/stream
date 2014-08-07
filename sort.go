@@ -172,16 +172,16 @@ func (s sortState) Less(i, j int) bool {
 	return a < b
 }
 
-// RunFilter implements the Filter interface: it sorts items by the specified
-// sorting keys.
+// RunFilter sorts items by the specified sorting keys. It implements
+// the Filter interface.
 func (s *SortFilter) RunFilter(arg Arg) error {
 	state := sortState{s.cmp, nil}
-	for s := range arg.In {
-		state.data = append(state.data, s)
+	for item := range arg.In {
+		state.data = append(state.data, item)
 	}
 	sort.Sort(state)
-	for _, s := range state.data {
-		arg.Out <- s
+	for _, item := range state.data {
+		arg.Out <- item
 	}
 	return nil
 }

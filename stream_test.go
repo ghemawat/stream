@@ -219,7 +219,7 @@ func ExampleSorter_Num() {
 	stream.Run(
 		stream.Items(
 			"a 100",
-			"b 20",
+			"b 20.3",
 			"c notanumber", // Will sort last since column 2 is not a number
 			"d",            // Will sort earliest since column 2 is missing
 		),
@@ -228,7 +228,7 @@ func ExampleSorter_Num() {
 	)
 	// Output:
 	// d
-	// b 20
+	// b 20.3
 	// a 100
 	// c notanumber
 }

@@ -98,8 +98,8 @@ func (s *SortFilter) Num(n int) *SortFilter {
 		}
 
 		// Convert columns from strings to numbers.
-		a3, a4 := strconv.ParseInt(a2, 0, 64)
-		b3, b4 := strconv.ParseInt(b2, 0, 64)
+		a3, a4 := strconv.ParseFloat(a2, 64)
+		b3, b4 := strconv.ParseFloat(b2, 64)
 
 		if a4 != b4 {
 			// Errors sort after numbers.

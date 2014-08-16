@@ -2,7 +2,6 @@ package stream
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 )
@@ -39,7 +38,10 @@ func WriteLines(writer io.Writer) Filter {
 	return FilterFunc(func(arg Arg) error {
 		b := bufio.NewWriter(writer)
 		for s := range arg.In {
-			if _, err := fmt.Fprintln(b, s); err != nil {
+			if _, err := b.Write([]byte(s)); err != nil {
+				return err
+			}
+			if err := b.WriteByte('\n'); err != nil {
 				return err
 			}
 			arg.Out <- s

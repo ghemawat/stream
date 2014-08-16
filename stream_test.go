@@ -529,7 +529,7 @@ func ExampleXargs_splitArguments() {
 }
 
 func BenchmarkSingle(b *testing.B) {
-	stream.Run(stream.Numbers(1, b.N))
+	stream.Run(stream.Repeat("", b.N))
 }
 
 func BenchmarkFive(b *testing.B) {
@@ -539,23 +539,31 @@ func BenchmarkFive(b *testing.B) {
 		}
 		return nil
 	})
-	stream.Run(
-		stream.Numbers(1, b.N),
-		f,
-		f,
-		f,
-		f,
-	)
+	stream.Run(stream.Repeat("", b.N), f, f, f, f)
 }
 
-func BenchmarkWriteLines(b *testing.B) {
+func BenchmarkWL(b *testing.B) {
 	f, err := os.Create("/dev/null")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	stream.Run(
-		stream.Numbers(1, b.N),
+		stream.Repeat("hello", b.N),
 		stream.WriteLines(f),
+	)
+}
+
+func BenchmarkSample(b *testing.B) {
+	stream.Run(
+		stream.Repeat("hello", b.N),
+		stream.Sample(10),
+	)
+}
+
+func BenchmarkSort(b *testing.B) {
+	stream.Run(
+		stream.Repeat("hello", b.N),
+		stream.Sort(),
 	)
 }

@@ -12,6 +12,16 @@ func Items(items ...string) Filter {
 	})
 }
 
+// Repeat emits n copies of s.
+func Repeat(s string, n int) Filter {
+	return FilterFunc(func(arg Arg) error {
+		for i := 0; i < n; i++ {
+			arg.Out <- s
+		}
+		return nil
+	})
+}
+
 // Numbers emits the integers x..y
 func Numbers(x, y int) Filter {
 	return FilterFunc(func(arg Arg) error {

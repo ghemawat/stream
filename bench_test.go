@@ -48,6 +48,13 @@ func BenchmarkSort(b *testing.B) {
 	)
 }
 
+func BenchmarkSort3(b *testing.B) {
+	stream.Run(
+		stream.Repeat("the 3 musketeers", b.N),
+		stream.Sort().Num(2).Text(1).Text(3),
+	)
+}
+
 func BenchmarkCmd(b *testing.B) {
 	stream.Run(
 		stream.Repeat("hello", b.N),

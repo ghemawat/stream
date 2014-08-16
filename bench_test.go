@@ -22,7 +22,7 @@ func BenchmarkFive(b *testing.B) {
 	stream.Run(stream.Repeat("", b.N), f, f, f, f)
 }
 
-func BenchmarkWL(b *testing.B) {
+func BenchmarkWrite(b *testing.B) {
 	f, err := os.Create("/dev/null")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -45,5 +45,19 @@ func BenchmarkSort(b *testing.B) {
 	stream.Run(
 		stream.Repeat("hello", b.N),
 		stream.Sort(),
+	)
+}
+
+func BenchmarkCmd(b *testing.B) {
+	stream.Run(
+		stream.Repeat("hello", b.N),
+		stream.Command("cat"),
+	)
+}
+
+func BenchmarkXargs1(b *testing.B) {
+	stream.Run(
+		stream.Repeat("hello", b.N),
+		stream.Xargs("true").LimitArgs(1),
 	)
 }

@@ -547,3 +547,15 @@ func BenchmarkFive(b *testing.B) {
 		f,
 	)
 }
+
+func BenchmarkWriteLines(b *testing.B) {
+	f, err := os.Create("/dev/null")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	stream.Run(
+		stream.Numbers(1, b.N),
+		stream.WriteLines(f),
+	)
+}

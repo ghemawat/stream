@@ -37,13 +37,14 @@ func Cat(filenames ...string) Filter {
 // for debugging.
 func WriteLines(writer io.Writer) Filter {
 	return FilterFunc(func(arg Arg) error {
+		b := bufio.NewWriter(writer)
 		for s := range arg.In {
-			if _, err := fmt.Fprintln(writer, s); err != nil {
+			if _, err := fmt.Fprintln(b, s); err != nil {
 				return err
 			}
 			arg.Out <- s
 		}
-		return nil
+		return b.Flush()
 	})
 }
 

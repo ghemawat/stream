@@ -1,8 +1,6 @@
 package stream
 
-import (
-	"os/exec"
-)
+import "os/exec"
 
 // XargsFilter is a Filter that applies a command to every input item.
 type XargsFilter struct {

@@ -1,8 +1,6 @@
 package stream
 
-import (
-	"regexp"
-)
+import "regexp"
 
 // Grep emits every input x that matches the regular expression r.
 func Grep(r string) Filter {

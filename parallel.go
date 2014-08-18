@@ -1,8 +1,6 @@
 package stream
 
-import (
-	"sync"
-)
+import "sync"
 
 // Parallel returns a Filter that runs n copies of f.  The input to
 // the Parallel Filter is divided up amongst the n copies.  The output

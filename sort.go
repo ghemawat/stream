@@ -58,7 +58,7 @@ func column(s string, n int) (int, string) {
 // order. Column 0 means the entire string. Items that do not have
 // column n sort to the front.
 func (s *SortFilter) Text(n int) *SortFilter {
-	return s.add(func(a, b string) int {
+	s.add(func(a, b string) int {
 		a1, a2 := column(a, n)
 		b1, b2 := column(b, n)
 		switch {
@@ -73,6 +73,7 @@ func (s *SortFilter) Text(n int) *SortFilter {
 		}
 		return 0
 	})
+	return s
 }
 
 // TextDecreasing sets the next sort key to sort by column n in
@@ -87,7 +88,7 @@ func (s *SortFilter) TextDecreasing(n int) *SortFilter {
 // column n sort to the front.  Items whose column n is not a number
 // sort to the end.
 func (s *SortFilter) Num(n int) *SortFilter {
-	return s.add(func(a, b string) int {
+	s.add(func(a, b string) int {
 		a1, a2 := column(a, n)
 		b1, b2 := column(b, n)
 		switch {
@@ -118,6 +119,7 @@ func (s *SortFilter) Num(n int) *SortFilter {
 		}
 		return 0
 	})
+	return s
 }
 
 // NumDecreasing sets the next sort key to sort by column n in reverse
@@ -130,7 +132,7 @@ func (s *SortFilter) NumDecreasing(n int) *SortFilter {
 
 // By adds a sort key to sort by the output of the specified less function.
 func (s *SortFilter) By(less func(a, b string) bool) *SortFilter {
-	return s.add(func(a, b string) int {
+	s.add(func(a, b string) int {
 		if less(a, b) {
 			return -1
 		}
@@ -139,11 +141,11 @@ func (s *SortFilter) By(less func(a, b string) bool) *SortFilter {
 		}
 		return 0
 	})
+	return s
 }
 
-func (s *SortFilter) add(cmp sortComparer) *SortFilter {
+func (s *SortFilter) add(cmp sortComparer) {
 	s.cmp = append(s.cmp, cmp)
-	return s
 }
 
 // flipLast reverses the comparison order for the last sort key.

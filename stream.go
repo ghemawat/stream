@@ -201,6 +201,6 @@ func Contents(filters ...Filter) ([]string, error) {
 func runFilter(f Filter, arg Arg, e *filterErrors) {
 	e.record(f.RunFilter(arg))
 	close(arg.Out)
-	for _ = range arg.In { // Discard all unhandled input
+	for range arg.In { // Discard all unhandled input
 	}
 }

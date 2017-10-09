@@ -45,6 +45,9 @@ func WriteLines(writer io.Writer) Filter {
 				return err
 			}
 			arg.Out <- s
+			if err := b.Flush(); err != nil {
+				return err
+			}
 		}
 		return b.Flush()
 	})

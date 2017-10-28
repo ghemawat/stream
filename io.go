@@ -36,20 +36,13 @@ func Cat(filenames ...string) Filter {
 // for debugging.
 func WriteLines(writer io.Writer) Filter {
 	return FilterFunc(func(arg Arg) error {
-		b := bufio.NewWriter(writer)
 		for s := range arg.In {
-			if _, err := b.Write([]byte(s)); err != nil {
-				return err
-			}
-			if err := b.WriteByte('\n'); err != nil {
+			if _, err := writer.Write(append([]byte(s),'\n')); err != nil {
 				return err
 			}
 			arg.Out <- s
-			if err := b.Flush(); err != nil {
-				return err
-			}
 		}
-		return b.Flush()
+		return nil
 	})
 }
 
